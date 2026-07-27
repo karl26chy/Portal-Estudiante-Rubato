@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Estudiante - Fundación Rubato</title>
+  <!-- Tailwind CSS CDN para estilo sin herramientas de compilación -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6 max-w-5xl mx-auto flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center pb-4 border-b border-slate-800">
+    <h1 class="text-2xl font-bold text-indigo-400 flex items-center gap-2">
+      <span>🎵</span> Fundación Rubato
+    </h1>
+    <span id="api-status" class="px-3 py-1 text-xs rounded-full bg-slate-800 text-slate-400 font-medium border border-slate-700">
+      Cargando estado...
+    </span>
+  </header>
+
+  <!-- Navegación -->
+  <nav class="flex gap-2 my-6 flex-wrap">
+    <button onclick="showView('inicio', this)" class="nav-btn px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium transition-all">Inicio</button>
+    <button onclick="showView('horarios', this)" class="nav-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-medium transition-all">Horarios</button>
+    <button onclick="showView('notas', this)" class="nav-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-medium transition-all">Notas</button>
+    <button onclick="showView('asistencia', this)" class="nav-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-medium transition-all">Asistencia</button>
+    <button onclick="showView('login', this)" class="nav-btn px-4 py-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 font-medium transition-all sm:ml-auto">Login</button>
+  </nav>
+
+  <!-- Contenedor dinámico donde se renderizan las vistas desde JS -->
+  <main id="app-view" class="bg-slate-800/80 p-6 rounded-xl border border-slate-700/60 shadow-xl flex-1">
+    <!-- Renderizado por vistas.js -->
+  </main>
+
+  <script src="/js/vistas.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
