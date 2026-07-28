@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Music, Shield, UserCheck, GraduationCap, ArrowRight, KeyRound, Mail, AlertCircle } from 'lucide-react';
-import Header from '../components/Header';
+import { User, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import Footer from '../components/Footer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -30,7 +30,9 @@ export default function Login() {
     }
   };
 
-  const handleQuickRoleLogin = async (role) => {
+  const handleQuickRoleLogin = async () => {
+    if (!role) return;
+
     try {
       setSubmitting(true);
       setErrorMessage('');
@@ -50,114 +52,154 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
-      <Header />
+    <div className="min-h-screen flex flex-col justify-between bg-white relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Backgrounds convertidos a utilidades nativas */}
+      <div className="absolute inset-0 flex z-0">
+        {/* bg-pattern-left */}
+        <div className="w-1/2 bg-[repeating-linear-gradient(45deg,#e2e8f0,#e2e8f0_10px,#cbd5e1_10px,#cbd5e1_20px),repeating-linear-gradient(-45deg,#e2e8f0,#e2e8f0_10px,#cbd5e1_10px,#cbd5e1_20px)] bg-[length:40px_40px] opacity-30"></div>
+        {/* bg-pattern-right */}
+        <div className="w-1/2 bg-[repeating-linear-gradient(to_bottom,transparent,transparent_20px,rgba(148,163,184,0.15)_20px,rgba(148,163,184,0.15)_24px),repeating-linear-gradient(to_right,transparent,transparent_40px,rgba(148,163,184,0.1)_40px,rgba(148,163,184,0.1)_44px)] opacity-40"></div>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 w-full flex-1 flex flex-col justify-center items-center">
+      {/* Header */}
+      <header className="relative z-10 text-center pt-12 pb-6">
+        <h1 className="text-5xl text-black mb-2 font-['Playfair_Display',serif] font-black tracking-[0.05em]">
+          FUNDACIÓN RUBATO
+        </h1>
+        <p className="text-slate-600 text-lg font-medium">
+          Portal académico y musical
+        </p>
+      </header>
+
+      <main className="relative z-10 flex-1 flex flex-col justify-center items-center px-4">
         <div className="w-full max-w-md">
-          
-          {/* Main Card */}
-          <div className="glass-panel p-8 rounded-2xl shadow-2xl border border-slate-800 relative glow-indigo">
+          {/* login-card */}
+          <div className="rounded-2xl p-8 bg-white/95 backdrop-blur-[20px] border border-white/30 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)]">
+            
+            {/* Logo Circle */}
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-indigo-500/25">
-                <Music className="w-7 h-7 text-white" />
+              {/* logo-circle */}
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 bg-[#5b21b6] shadow-[0_10px_25px_-5px_rgba(91,33,182,0.4)]">
+                <div className="w-12 h-12 flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-white"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 2C12 2 8 6 8 12C8 17 12 22 12 22C12 22 16 17 16 12C16 6 12 2 12 2Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Iniciar Sesión</h2>
-              <p className="text-xs text-slate-400 mt-1">Accede con tu cuenta institucional o usa el modo de prueba por rol</p>
+              <div className="mt-2">
+                <span className="text-white font-bold text-xs uppercase tracking-wider block">
+                  FUNDACIÓN RUBATO
+                </span>
+              </div>
             </div>
 
+            {/* Títulos */}
+            <h2 className="text-2xl font-bold text-black text-center mb-2 font-['Playfair_Display',serif]">
+              Iniciar sesión
+            </h2>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              Acceder con tu cuenta institucional
+            </p>
+
             {errorMessage && (
-              <div className="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
-            {/* Custom Login Form */}
+            {/* Formulario */}
             <form onSubmit={handleCustomLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
+                  {/* form-input */}
                   <input
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ejemplo@rubato.org"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    placeholder="Usuario"
+                    className="w-full pl-11 pr-4 py-3 text-sm text-black placeholder-slate-400 bg-white border border-gray-300 rounded-xl transition-all duration-200 focus:outline-none focus:border-[#8b5cf6] focus:ring-[3px] focus:ring-[#8b5cf6]/20"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
                 <div className="relative">
-                  <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
+                  {/* form-input */}
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/90 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    placeholder="Contraseña"
+                    className="w-full pl-11 pr-4 py-3 text-sm text-black placeholder-slate-400 bg-white border border-gray-300 rounded-xl transition-all duration-200 focus:outline-none focus:border-[#8b5cf6] focus:ring-[3px] focus:ring-[#8b5cf6]/20"
                     required
                   />
                 </div>
               </div>
 
+              {/* submit-btn */}
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-3 px-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 bg-[#5b21b6] transition-colors duration-200 hover:bg-[#4c1d95]"
               >
-                <span>{submitting ? 'Verificando...' : 'Ingresar al Portal'}</span>
+                <span>{submitting ? 'Verificando...' : 'Ingresar al portal'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
-            <div className="relative my-6 text-center">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-              <span className="relative px-3 bg-slate-900 text-slate-500 text-xs font-medium uppercase tracking-wider">O selecciona un Rol de Prueba</span>
-            </div>
+            {/* Selector de Rol */}
+            <div className="mt-6">
+              <div className="border border-purple-300 rounded-xl p-4 bg-white">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  Modo de prueba: seleccionar rol
+                </label>
+                {/* role-selector */}
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-3 py-2 text-sm text-black focus:outline-none border border-[#a855f7] rounded-xl bg-white"
+                >
+                  <option value="" disabled>Seleccionar rol</option>
+                  <option value="student">Estudiante</option>
+                  <option value="professor">Profesor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
 
-            {/* Quick Role Simulation Buttons */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('admin')}
-                disabled={submitting}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-purple-950/30 hover:bg-purple-900/40 border border-purple-800/40 hover:border-purple-500/60 text-purple-300 transition-all group cursor-pointer"
-              >
-                <Shield className="w-5 h-5 mb-1 text-purple-400 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-semibold">Admin</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('professor')}
-                disabled={submitting}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/40 hover:border-emerald-500/60 text-emerald-300 transition-all group cursor-pointer"
-              >
-                <UserCheck className="w-5 h-5 mb-1 text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-semibold">Profesor</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickRoleLogin('student')}
-                disabled={submitting}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-indigo-950/30 hover:bg-indigo-900/40 border border-indigo-800/40 hover:border-indigo-500/60 text-indigo-300 transition-all group cursor-pointer"
-              >
-                <GraduationCap className="w-5 h-5 mb-1 text-indigo-400 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-semibold">Estudiante</span>
-              </button>
+              {role && (
+                {/* submit-btn */}
+                <button
+                  type="button"
+                  onClick={handleQuickRoleLogin}
+                  disabled={submitting}
+                  className="w-full mt-3 py-3 px-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 bg-[#5b21b6] transition-colors duration-200 hover:bg-[#4c1d95]"
+                >
+                  <span>{submitting ? 'Ingresando...' : 'Ingresar al portal'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
+          {/* JWT Info */}
           <p className="text-center text-xs text-slate-500 mt-4">
-            El token JWT se generará excluyendo la contraseña y se almacenará en cookies <code className="text-indigo-400">HttpOnly</code>, <code className="text-indigo-400">SameSite=Strict</code>.
+            El token JWT se generará excluyendo la contraseña y se almacenará en cookies <code className="text-purple-600">HttpOnly</code>, <code className="text-purple-600">SameSite=Strict</code>.
           </p>
-
         </div>
       </main>
 

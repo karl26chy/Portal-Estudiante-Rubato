@@ -19,3 +19,6 @@ Thumbs.db
 # Logs del sistema
 logs/
 *.log
+
+# Build artifacts del frontend
+frontend/dist/
