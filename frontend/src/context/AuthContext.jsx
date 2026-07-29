@@ -1,8 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-
-// Habilitar envío automático de cookies HttpOnly en solicitudes Axios
-axios.defaults.withCredentials = true;
 
 const AuthContext = createContext(null);
 
@@ -11,15 +7,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Verificar la sesión al cargar la app llamando al endpoint /api/auth/me
-  const checkAuth = async () => {
+  const checkAuth = () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/auth/me');
-      if (res.data.authenticated) {
-        setUser(res.data.user);
+      const savedUser = localStorage.getItem('rubato_active_user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
       } else {
-        setUser(null);
+        // Usuario por defecto si no hay sesión iniciada
+        const defaultUser = {
+          nombre: "Admin Fundación Rubato",
+          usuario: "admin@rubato.org",
+          role: "admin"
+        };
+        setUser(defaultUser);
+        localStorage.setItem('rubato_active_user', JSON.stringify(defaultUser));
       }
     } catch (err) {
       setUser(null);
@@ -32,28 +34,46 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // Función de Login
+  // Función de Login desacoplada del backend
   const login = async (usuario, roleRequested = null) => {
     try {
       setError(null);
-      const res = await axios.post('/api/auth/login', { usuario, roleRequested });
-      setUser(res.data.user);
-      return res.data.user;
+      let assignedRole = roleRequested || 'admin';
+      
+      // Inferir rol según correo o selección
+      if (!roleRequested) {
+        if (usuario.includes('profesor') || usuario.includes('docente')) {
+          assignedRole = 'professor';
+        } else if (usuario.includes('estudiante') || usuario.includes('student')) {
+          assignedRole = 'student';
+        } else {
+          assignedRole = 'admin';
+        }
+      }
+
+      const loggedUser = {
+        nombre: usuario.split('@')[0] || usuario,
+        usuario,
+        role: assignedRole
+      };
+
+      setUser(loggedUser);
+      localStorage.setItem('rubato_active_user', JSON.stringify(loggedUser));
+      return loggedUser;
     } catch (err) {
-      const msg = err.response?.data?.error || 'Error al iniciar sesión';
+      const msg = 'Error al iniciar sesión';
       setError(msg);
       throw new Error(msg);
     }
   };
 
-  // Función de Logout (Limpia la cookie HttpOnly en el servidor)
+  // Función de Logout
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout');
+      localStorage.removeItem('rubato_active_user');
+      setUser(null);
     } catch (err) {
       console.error('Error al cerrar sesión:', err);
-    } finally {
-      setUser(null);
     }
   };
 
@@ -61,6 +81,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         role: user?.role || null,
         loading,
         error,
