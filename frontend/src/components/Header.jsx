@@ -53,9 +53,11 @@ export default function Header() {
         
         {/* Marca / Logo */}
         <Link to={user ? `/${user.role}` : '/login'} className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-[#6b0060] flex items-center justify-center shadow-md shadow-purple-900/20 group-hover:scale-105 transition-all">
-            <Music className="w-5 h-5 text-white" />
-          </div>
+          <img 
+            src="/images/logo-Rubato.png" 
+            alt="Logo Fundación Rubato" 
+            className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" 
+          />
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-slate-800 font-['Playfair_Display',serif] tracking-tight leading-none">
               FUNDACIÓN RUBATO
