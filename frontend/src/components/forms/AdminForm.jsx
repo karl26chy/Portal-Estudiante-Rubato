@@ -5,7 +5,7 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'Superami',
+    role: 'SuperAdmin',
   });
   const [errors, setErrors] = useState({});
 
@@ -14,10 +14,10 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
       setFormData({
         name: initialData.name || '',
         email: initialData.email || '',
-        role: 'Superami',
+        role: 'SuperAdmin',
       });
     } else {
-      setFormData({ name: '', email: '', role: 'Superami' });
+      setFormData({ name: '', email: '', role: 'SuperAdmin' });
     }
   }, [initialData]);
 
@@ -37,9 +37,9 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({ ...formData, role: 'Superami' });
+      onSubmit({ ...formData, role: 'SuperAdmin' });
       if (!initialData) {
-        setFormData({ name: '', email: '', role: 'Superami' });
+        setFormData({ name: '', email: '', role: 'SuperAdmin' });
       }
     }
   };
@@ -96,7 +96,7 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
         {errors.email && <p className="text-xs text-rose-600 font-medium mt-1">{errors.email}</p>}
       </div>
 
-      {/* Rol de Administrador Fijo: Superami */}
+      {/* Rol de Administrador Fijo: SuperAdmin */}
       <div>
         <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
           Rol de Sistema
@@ -104,7 +104,7 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
         <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-[#6b0060]" />
-            <span className="text-sm font-bold text-slate-800">Superami</span>
+            <span className="text-sm font-bold text-slate-800">SuperAdmin</span>
           </div>
           <span className="text-[11px] font-semibold text-[#6b0060] bg-white px-2 py-0.5 rounded-full border border-purple-200">
             Control Exclusivo
@@ -118,7 +118,7 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
           type="submit"
           className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer"
         >
-          {initialData ? 'Actualizar Superami' : 'Guardar Administrador (Superami)'}
+          {initialData ? 'Actualizar SuperAdmin' : 'Guardar Administrador (SuperAdmin)'}
         </button>
         {onCancel && (
           <button

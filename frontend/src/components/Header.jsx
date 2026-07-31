@@ -21,13 +21,13 @@ export default function Header() {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'admin':
-      case 'Superami':
+      case 'SuperAdmin':
       case 'Super Admin':
       case 'Gestor Académico':
       case 'Auxiliar':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-[#6b0060]">
-            <Shield className="w-3.5 h-3.5" /> Superami
+            <Shield className="w-3.5 h-3.5" /> SuperAdmin
           </span>
         );
       case 'professor':
@@ -67,14 +67,14 @@ export default function Header() {
         {/* Botón de Menú Móvil */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-slate-700 hover:text-[#6b0060] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+          className="lg:hidden p-2 text-slate-700 hover:text-[#6b0060] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
           aria-label="Abrir menú"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
 
         {/* Desktop View: Usuario Activo y Navegación */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           {activeUser ? (
             <>
               {getRoleBadge(activeUser.role)}
@@ -149,7 +149,7 @@ export default function Header() {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden mt-3 pt-3 border-t border-slate-200 space-y-3 pb-2 animate-in slide-in-from-top-2">
+        <div className="lg:hidden mt-3 pt-3 border-t border-slate-200 space-y-3 pb-2 animate-in slide-in-from-top-2">
           {activeUser && (
             <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
               <div>

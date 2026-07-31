@@ -77,7 +77,7 @@ export default function AdminDashboard() {
       addToast(`Administrador "${data.name}" actualizado correctamente`, 'success');
     } else {
       addAdmin(data);
-      addToast(`Administrador (Superami) "${data.name}" registrado correctamente`, 'success');
+      addToast(`Administrador (SuperAdmin) "${data.name}" registrado correctamente`, 'success');
     }
     setEditingItem(null);
   };
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     const nextIndex = (currentIndex + 1) % admins.length;
     const nextAdmin = admins[nextIndex];
     setCurrentAdmin(nextAdmin);
-    addToast(`Sesión activa simulada como: ${nextAdmin.name} (Superami)`, 'success');
+    addToast(`Sesión activa simulada como: ${nextAdmin.name} (SuperAdmin)`, 'success');
   };
 
   const cancelEdit = () => {
@@ -174,18 +174,18 @@ export default function AdminDashboard() {
                 Panel de Administración
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
-                Gestión integral de la Fundación Rubato (Estudiantes, Docentes y Superamis)
+                Gestión integral de la Fundación Rubato (Estudiantes, Docentes y SuperAdmins)
               </p>
             </div>
 
-            {/* Simular Sesión / Estado Admin Activo (Superami) */}
+            {/* Simular Sesión / Estado Admin Activo (SuperAdmin) */}
             <div className="flex items-center gap-3 bg-white p-2.5 px-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060]">
                 <Shield className="w-5 h-5" />
               </div>
               <div className="text-xs">
                 <p className="font-bold text-slate-800">{currentAdmin?.name || 'Administrador'}</p>
-                <p className="text-[#6b0060] font-semibold">Superami</p>
+                <p className="text-[#6b0060] font-semibold">SuperAdmin</p>
               </div>
               <button
                 onClick={handleSimulateNextAdmin}
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
                 }}
               />
               <TabButton
-                label="3. Administradores (Superami)"
+                label="3. Administradores (SuperAdmin)"
                 isActive={activeTab === 'admins'}
                 onClick={() => {
                   setActiveTab('admins');
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
                 {activeTab === 'students' && (editingItem ? 'Editar Estudiante' : 'Registrar Estudiante')}
                 {activeTab === 'teachers' && (editingItem ? 'Editar Docente' : 'Registrar Docente')}
-                {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (Superami)')}
+                {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (SuperAdmin)')}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
                 {activeTab === 'students' && (
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
                 {activeTab === 'students' && 'Directorio de Estudiantes'}
                 {activeTab === 'teachers' && 'Directorio de Docentes'}
-                {activeTab === 'admins' && 'Administradores Registrados (Superami)'}
+                {activeTab === 'admins' && 'Administradores Registrados (SuperAdmin)'}
               </h2>
 
               {/* 1. Tabla de Estudiantes */}
@@ -334,7 +334,7 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* 3. Lista de Administradores (Rol Único Superami) */}
+              {/* 3. Lista de Administradores (Rol Único SuperAdmin) */}
               {activeTab === 'admins' && (
                 <div className="space-y-4">
                   <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center justify-between">
@@ -343,7 +343,7 @@ export default function AdminDashboard() {
                         Sesión Activa Simulada
                       </p>
                       <p className="text-sm font-bold text-slate-800">
-                        {currentAdmin?.name} — <span className="text-[#6b0060]">Superami</span>
+                        {currentAdmin?.name} — <span className="text-[#6b0060]">SuperAdmin</span>
                       </p>
                     </div>
                     <button
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
 
                         <div className="flex items-center gap-3">
                           <span className="px-3 py-1 text-xs font-bold rounded-full bg-purple-100 text-[#6b0060] border border-purple-200">
-                            Superami
+                            SuperAdmin
                           </span>
                           <div className="flex items-center gap-1">
                             <button
@@ -496,7 +496,7 @@ export default function AdminDashboard() {
             ? `¿Está seguro de eliminar al estudiante "${confirmDialog.item?.name}"?`
             : confirmDialog.type === 'teacher'
             ? `¿Está seguro de eliminar al docente "${confirmDialog.item?.name}"?`
-            : `¿Está seguro de eliminar al administrador (Superami) "${confirmDialog.item?.name}"?`
+            : `¿Está seguro de eliminar al administrador (SuperAdmin) "${confirmDialog.item?.name}"?`
         }
       />
 

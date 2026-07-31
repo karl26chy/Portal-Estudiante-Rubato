@@ -17,9 +17,9 @@ const initialProfessors = [
 ];
 
 const initialAdmins = [
-  { id: 1, name: "Director Fundación Rubato", email: "admin@rubato.org", role: "Superami" },
-  { id: 2, name: "Gloria Ramírez", email: "g.ramirez@rubato.org", role: "Superami" },
-  { id: 3, name: "Andrés Castro", email: "a.castro@rubato.org", role: "Superami" },
+  { id: 1, name: "Director Fundación Rubato", email: "admin@rubato.org", role: "SuperAdmin" },
+  { id: 2, name: "Gloria Ramírez", email: "g.ramirez@rubato.org", role: "SuperAdmin" },
+  { id: 3, name: "Andrés Castro", email: "a.castro@rubato.org", role: "SuperAdmin" },
 ];
 
 const initialClasses = [
@@ -56,10 +56,10 @@ export function DataManagerProvider({ children }) {
       localStorage.setItem('rubato_professors', JSON.stringify(initialProfessors));
     }
 
-    // 3. Administradores (Rol Único Superami)
+    // 3. Administradores (Rol Único SuperAdmin)
     const savedAdmins = localStorage.getItem('rubato_admins');
     if (savedAdmins) {
-      const parsedAdmins = JSON.parse(savedAdmins).map(a => ({ ...a, role: 'Superami' }));
+      const parsedAdmins = JSON.parse(savedAdmins).map(a => ({ ...a, role: 'SuperAdmin' }));
       setAdmins(parsedAdmins);
       localStorage.setItem('rubato_admins', JSON.stringify(parsedAdmins));
     } else {
@@ -70,7 +70,7 @@ export function DataManagerProvider({ children }) {
     // 4. Admin Actual Simulado
     const savedCurrentAdmin = localStorage.getItem('rubato_current_admin');
     if (savedCurrentAdmin) {
-      const parsedCurrentAdmin = { ...JSON.parse(savedCurrentAdmin), role: 'Superami' };
+      const parsedCurrentAdmin = { ...JSON.parse(savedCurrentAdmin), role: 'SuperAdmin' };
       setCurrentAdminState(parsedCurrentAdmin);
     } else {
       const defaultAdmin = initialAdmins[0];
@@ -137,9 +137,9 @@ export function DataManagerProvider({ children }) {
     saveToLocalStorage('rubato_professors', newTeachers);
   };
 
-  // --- CRUD Administradores (Superami) ---
+  // --- CRUD Administradores (SuperAdmin) ---
   const addAdmin = (admin) => {
-    const newAdmin = { ...admin, id: Date.now(), role: 'Superami' };
+    const newAdmin = { ...admin, id: Date.now(), role: 'SuperAdmin' };
     const newAdmins = [...admins, newAdmin];
     setAdmins(newAdmins);
     saveToLocalStorage('rubato_admins', newAdmins);
@@ -147,7 +147,7 @@ export function DataManagerProvider({ children }) {
   };
 
   const updateAdmin = (id, updatedAdmin) => {
-    const newAdminObj = { ...updatedAdmin, id, role: 'Superami' };
+    const newAdminObj = { ...updatedAdmin, id, role: 'SuperAdmin' };
     const newAdmins = admins.map(a => a.id === id ? newAdminObj : a);
     setAdmins(newAdmins);
     saveToLocalStorage('rubato_admins', newAdmins);
@@ -166,9 +166,9 @@ export function DataManagerProvider({ children }) {
   };
 
   const setCurrentAdmin = (adminObj) => {
-    const superamiAdmin = { ...adminObj, role: 'Superami' };
-    setCurrentAdminState(superamiAdmin);
-    saveToLocalStorage('rubato_current_admin', superamiAdmin);
+    const superAdminObj = { ...adminObj, role: 'SuperAdmin' };
+    setCurrentAdminState(superAdminObj);
+    saveToLocalStorage('rubato_current_admin', superAdminObj);
   };
 
   // --- Clases ---
