@@ -1,34 +1,13 @@
 // controllers/authController.js - Lógica de inicio de sesión y gestión de credenciales
 const { generateToken, verifyToken } = require('../utils/jwt');
-
-// Usuarios de prueba predefinidos (Mock DB)
-const MOCK_USERS = [
-  { id: 1, usuario: 'admin@rubato.org', nombre: 'Admin Fundación Rubato', role: 'admin' },
-  { id: 2, usuario: 'profesor@rubato.org', nombre: 'Maestro Carlos Silva', role: 'professor' },
-  { id: 3, usuario: 'estudiante@rubato.org', nombre: 'Ana María Gómez', role: 'student' }
-];
+const authService = require('../services/authService');
 
 // POST /api/auth/login
 async function login(req, res) {
   try {
-    const { usuario, roleRequested } = req.body;
+    const { usuario, password, roleRequested } = req.body;
 
-    // Buscar usuario por correo o por rol solicitado
-    let user = MOCK_USERS.find(u => u.usuario.toLowerCase() === (usuario || '').toLowerCase());
-    
-    if (!user && roleRequested) {
-      user = MOCK_USERS.find(u => u.role === roleRequested);
-    }
-
-    if (!user) {
-      // Si se envía un correo personalizado, asignamos rol por defecto 'student'
-      user = {
-        id: Date.now(),
-        usuario: usuario || 'estudiante@rubato.org',
-        nombre: usuario ? usuario.split('@')[0] : 'Estudiante Rubato',
-        role: roleRequested || 'student'
-      };
-    }
+    const user = await authService.authenticateUser(usuario, password, roleRequested);
 
     // Firmar token JWT sin la contraseña
     const token = generateToken(user);
@@ -52,6 +31,11 @@ async function login(req, res) {
     });
   } catch (error) {
     console.error('Error en login:', error);
+    
+    if (error.message === 'Usuario no encontrado' || error.message === 'Credenciales inválidas') {
+      return res.status(401).json({ error: error.message });
+    }
+    
     return res.status(500).json({ error: 'Error interno en el servidor durante el inicio de sesión.' });
   }
 }
