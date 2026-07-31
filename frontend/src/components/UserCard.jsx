@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Edit, Trash2 } from 'lucide-react';
+import { Mail, Edit, Trash2, Eye } from 'lucide-react';
 
 export default function UserCard({
   name,
@@ -11,6 +11,7 @@ export default function UserCard({
   iconBgClass = 'bg-purple-100',
   onEdit,
   onDelete,
+  onViewCredentials,
   layout = 'vertical',
   highlighted = false
 }) {
@@ -39,8 +40,17 @@ export default function UserCard({
             </div>
           )}
           
-          {(onEdit || onDelete) && (
+          {(onEdit || onDelete || onViewCredentials) && (
             <div className="flex items-center gap-1">
+              {onViewCredentials && (
+                <button
+                  onClick={onViewCredentials}
+                  className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer"
+                  title="Ver credenciales"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              )}
               {onEdit && (
                 <button
                   onClick={onEdit}
@@ -93,8 +103,17 @@ export default function UserCard({
           )}
         </div>
         
-        {(onEdit || onDelete) && (
+        {(onEdit || onDelete || onViewCredentials) && (
           <div className="flex items-center gap-1 shrink-0">
+            {onViewCredentials && (
+              <button
+                onClick={onViewCredentials}
+                className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer"
+                title="Ver credenciales"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            )}
             {onEdit && (
               <button
                 onClick={onEdit}

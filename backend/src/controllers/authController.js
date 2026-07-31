@@ -52,21 +52,56 @@ function logout(req, res) {
 
 // GET /api/auth/me
 function getMe(req, res) {
-  const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
-  if (!token) {
+  // Ya viene req.user gracias a authenticateJWT
+  if (!req.user) {
     return res.status(401).json({ authenticated: false, user: null });
   }
 
-  const decoded = verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ authenticated: false, user: null });
-  }
+  return res.json({ authenticated: true, user: req.user });
+}
 
-  return res.json({ authenticated: true, user: decoded });
+// POST /api/auth/register (Solo ADMIN)
+async function register(req, res) {
+  try {
+    const userData = req.body;
+    const result = await authService.registerUser(userData);
+    
+    return res.status(201).json({
+      message: 'Usuario registrado exitosamente',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error en register:', error);
+    if (error.message === 'El correo electrónico ya está en uso.' || error.message === 'Faltan campos obligatorios para el registro.') {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Error interno en el servidor durante el registro.' });
+  }
+}
+
+// GET /api/auth/credentials/:id (Solo ADMIN)
+async function getCredentials(req, res) {
+  try {
+    const targetUserId = req.params.id;
+    const decryptedPassword = await authService.getDecryptedCredentials(targetUserId);
+    
+    return res.json({
+      message: 'Credenciales obtenidas',
+      password: decryptedPassword
+    });
+  } catch (error) {
+    console.error('Error en getCredentials:', error);
+    if (error.message === 'No se encontraron credenciales para este usuario.') {
+      return res.status(404).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Error al obtener credenciales.' });
+  }
 }
 
 module.exports = {
   login,
   logout,
-  getMe
+  getMe,
+  register,
+  getCredentials
 };

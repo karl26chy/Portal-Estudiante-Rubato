@@ -10,7 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
-import { Shield, RefreshCw, UserCheck, Edit, Trash2, Mail, Key, Copy, Check, X, Sparkles } from 'lucide-react';
+import { Shield, RefreshCw, UserCheck, Edit, Trash2, Mail, Key, Copy, Check, X, Sparkles, Eye } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('students');
@@ -111,6 +111,31 @@ export default function AdminDashboard() {
       addToast(`Administrador "${item.name}" eliminado`, 'warning');
     }
     setConfirmDialog({ isOpen: false, item: null, type: null });
+  };
+
+  const handleViewCredentials = async (item) => {
+    try {
+      const response = await fetch(`/api/auth/credentials/${item.id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+          // Las cookies de sesión viajan automáticamente
+        }
+      });
+      if (!response.ok) {
+        throw new Error('No se pudieron obtener las credenciales.');
+      }
+      const data = await response.json();
+      
+      setGeneratedCredentialsModal({
+        studentName: item.name,
+        usuario: item.username || item.email,
+        password: data.password,
+        title: 'Credenciales del Usuario',
+        subtitle: `Acceso para ${item.role || 'usuario'}`
+      });
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
   };
 
   // --- Función para Simular Sesión (Cambiar Admin Activo) ---
@@ -282,6 +307,7 @@ export default function AdminDashboard() {
                       setActiveTab('students');
                     }}
                     onDelete={handleDeleteStudent}
+                    onViewCredentials={handleViewCredentials}
                   />
                 </div>
               )}
@@ -305,6 +331,7 @@ export default function AdminDashboard() {
                       layout="vertical"
                       onEdit={() => setEditingItem(t)}
                       onDelete={() => handleDeleteTeacher(t)}
+                      onViewCredentials={() => handleViewCredentials(t)}
                     />
                   ))}
                 </div>
@@ -347,6 +374,7 @@ export default function AdminDashboard() {
                         }
                         onEdit={() => setEditingItem(a)}
                         onDelete={() => handleDeleteAdmin(a)}
+                        onViewCredentials={() => handleViewCredentials(a)}
                       />
                     ))}
                   </div>
@@ -370,9 +398,11 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif]">
-                    Credenciales Generadas
+                    {generatedCredentialsModal.title || 'Credenciales Generadas'}
                   </h3>
-                  <p className="text-xs text-slate-500">Acceso automático de estudiante</p>
+                  <p className="text-xs text-slate-500">
+                    {generatedCredentialsModal.subtitle || 'Acceso automático'}
+                  </p>
                 </div>
               </div>
               <button
@@ -385,7 +415,7 @@ export default function AdminDashboard() {
 
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4 space-y-3">
               <p className="text-xs font-semibold text-slate-700">
-                Estudiante: <span className="font-bold text-slate-900">{generatedCredentialsModal.studentName}</span>
+                Usuario/Nombre: <span className="font-bold text-slate-900">{generatedCredentialsModal.studentName}</span>
               </p>
 
               {/* Usuario */}

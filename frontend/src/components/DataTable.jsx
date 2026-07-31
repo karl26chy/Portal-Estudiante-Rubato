@@ -1,7 +1,7 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 
-export default function DataTable({ columns, data, onEdit, onDelete }) {
+export default function DataTable({ columns, data, onEdit, onDelete, onViewCredentials }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200">
       <table className="w-full bg-white">
@@ -37,6 +37,15 @@ export default function DataTable({ columns, data, onEdit, onDelete }) {
                 ))}
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-2">
+                    {onViewCredentials && (
+                      <button
+                        onClick={() => onViewCredentials(row)}
+                        className="p-1 text-slate-500 hover:text-indigo-600 rounded hover:bg-indigo-50 transition-colors"
+                        title="Ver credenciales"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => onEdit(row)}
                       className="p-1 text-indigo-600 hover:bg-indigo-100 rounded transition-colors"

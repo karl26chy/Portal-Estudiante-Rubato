@@ -9,10 +9,13 @@ USE rubato_db;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `usuario` VARCHAR(100) NOT NULL UNIQUE,
   `nombre` VARCHAR(100) NOT NULL,
-  `role` VARCHAR(50) NOT NULL,
+  `apellido` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(150) NOT NULL UNIQUE,
+  `username` VARCHAR(100) NOT NULL UNIQUE,
+  `role` ENUM('ADMIN', 'DOCENTE', 'ESTUDIANTE') NOT NULL,
   `password_hash` VARCHAR(255) NOT NULL,
+  `password_encrypted` TEXT NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -36,12 +39,16 @@ CREATE TABLE IF NOT EXISTS `classes` (
 -- -----------------------------------------------------
 
 -- Datos Semilla para Usuarios
--- Nota: La contraseña para todos es '123456' hasheada con bcrypt (cost 10)
-INSERT INTO `users` (`id`, `usuario`, `nombre`, `role`, `password_hash`) VALUES
-(1, 'admin@rubato.org', 'Admin Fundación Rubato', 'admin', '$2a$10$wNnQ6iGntt6V1M7Wn4rD0eU3L.4Zk6.k2wW3T1g7Cj8I/i5D.Q3zG'),
-(2, 'profesor@rubato.org', 'Maestro Carlos Silva', 'professor', '$2a$10$wNnQ6iGntt6V1M7Wn4rD0eU3L.4Zk6.k2wW3T1g7Cj8I/i5D.Q3zG'),
-(3, 'estudiante@rubato.org', 'Ana María Gómez', 'student', '$2a$10$wNnQ6iGntt6V1M7Wn4rD0eU3L.4Zk6.k2wW3T1g7Cj8I/i5D.Q3zG')
-ON DUPLICATE KEY UPDATE `usuario`=`usuario`;
+-- Nota: La contraseña para todos es 'Rubato.2026*'
+-- Bcrypt Hash y AES-256 Encrypted
+INSERT INTO `users` (`id`, `nombre`, `apellido`, `email`, `username`, `role`, `password_hash`, `password_encrypted`) VALUES
+(1, 'Admin', 'Rubato', 'admin@rubato.org', 'admin.rubato01', 'ADMIN', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
+(2, 'SuperAdmin', 'Sistema', 'superadmin@rubato.org', 'superadmin.sistema01', 'ADMIN', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
+(3, 'Carlos', 'Silva', 'carlos.silva@rubato.org', 'carlos.silva01', 'DOCENTE', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
+(4, 'María', 'Fernández', 'maria.fernandez@rubato.org', 'maria.fernandez01', 'DOCENTE', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
+(5, 'Ana María', 'Gómez', 'ana.gomez@rubato.org', 'ana.gomez01', 'ESTUDIANTE', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
+(6, 'Luis', 'Pérez', 'luis.perez@rubato.org', 'luis.perez01', 'ESTUDIANTE', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2')
+ON DUPLICATE KEY UPDATE `username`=`username`;
 
 -- Datos Semilla para Clases
 INSERT INTO `classes` (`id`, `asignatura`, `profesor_nombre`, `profesor_titulo`, `horario`, `aula`, `nota`, `asistencia`) VALUES

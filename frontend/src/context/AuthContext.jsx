@@ -34,36 +34,39 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // Función de Login desacoplada del backend
-  const login = async (usuario, roleRequested = null) => {
+  // Función de Login conectada al backend
+  const login = async (usuario, password, roleRequested = null) => {
     try {
+      setLoading(true);
       setError(null);
-      let assignedRole = roleRequested || 'admin';
       
-      // Inferir rol según correo o selección
-      if (!roleRequested) {
-        if (usuario.includes('profesor') || usuario.includes('docente')) {
-          assignedRole = 'professor';
-        } else if (usuario.includes('estudiante') || usuario.includes('student')) {
-          assignedRole = 'student';
-        } else {
-          assignedRole = 'admin';
-        }
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, password, roleRequested })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión');
       }
 
       const loggedUser = {
-        nombre: usuario.split('@')[0] || usuario,
-        usuario,
-        role: assignedRole
+        id: data.user.id,
+        nombre: data.user.nombre,
+        usuario: data.user.usuario,
+        role: data.user.role.toLowerCase() // Normalizar para el frontend (admin, student, professor)
       };
 
       setUser(loggedUser);
       localStorage.setItem('rubato_active_user', JSON.stringify(loggedUser));
       return loggedUser;
     } catch (err) {
-      const msg = 'Error al iniciar sesión';
-      setError(msg);
-      throw new Error(msg);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 

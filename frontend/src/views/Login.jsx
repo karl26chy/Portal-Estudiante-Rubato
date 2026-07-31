@@ -23,7 +23,7 @@ export default function Login() {
     try {
       setSubmitting(true);
       setErrorMessage('');
-      const loggedUser = await login(email);
+      const loggedUser = await login(email, password);
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Credenciales no válidas.');
@@ -44,7 +44,8 @@ export default function Login() {
         student: 'estudiante@rubato.org'
       };
       const targetEmail = mockEmailMap[role];
-      const loggedUser = await login(targetEmail, role);
+      const targetPassword = 'Rubato.2026*'; // Contraseña por defecto para pruebas
+      const loggedUser = await login(targetEmail, targetPassword, role);
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Error en el acceso directo de prueba.');
