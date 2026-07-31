@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Award, Mail } from 'lucide-react';
+import FormField from './FormField';
+import FormActions from './FormActions';
 
 export default function TeacherForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -57,83 +59,41 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
-      <div>
-        <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
-          Nombre Completo
-        </label>
-        <div className="relative">
-          <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className={`w-full pl-10 pr-4 py-2.5 text-slate-900 font-medium text-sm bg-white border rounded-xl placeholder:text-slate-500 transition-all focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 ${
-              errors.name ? 'border-rose-500' : 'border-slate-300'
-            }`}
-            placeholder="Ej: Maestro Carlos Silva"
-          />
-        </div>
-        {errors.name && <p className="text-xs text-rose-600 font-medium mt-1">{errors.name}</p>}
-      </div>
+      <FormField
+        label="Nombre Completo"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        icon={User}
+        placeholder="Ej: Maestro Carlos Silva"
+        error={errors.name}
+      />
 
-      <div>
-        <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
-          Especialidad / Cátedra
-        </label>
-        <div className="relative">
-          <Award className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            name="specialty"
-            value={formData.specialty}
-            onChange={handleChange}
-            className={`w-full pl-10 pr-4 py-2.5 text-slate-900 font-medium text-sm bg-white border rounded-xl placeholder:text-slate-500 transition-all focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 ${
-              errors.specialty ? 'border-rose-500' : 'border-slate-300'
-            }`}
-            placeholder="Ej: Piano Principal, Violín y Cuerdas"
-          />
-        </div>
-        {errors.specialty && <p className="text-xs text-rose-600 font-medium mt-1">{errors.specialty}</p>}
-      </div>
+      <FormField
+        label="Especialidad / Cátedra"
+        name="specialty"
+        value={formData.specialty}
+        onChange={handleChange}
+        icon={Award}
+        placeholder="Ej: Piano Principal, Violín y Cuerdas"
+        error={errors.specialty}
+      />
 
-      <div>
-        <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
-          Correo Institucional
-        </label>
-        <div className="relative">
-          <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full pl-10 pr-4 py-2.5 text-slate-900 font-medium text-sm bg-white border rounded-xl placeholder:text-slate-500 transition-all focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 ${
-              errors.email ? 'border-rose-500' : 'border-slate-300'
-            }`}
-            placeholder="profesor@rubato.org"
-          />
-        </div>
-        {errors.email && <p className="text-xs text-rose-600 font-medium mt-1">{errors.email}</p>}
-      </div>
+      <FormField
+        label="Correo Institucional"
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        icon={Mail}
+        placeholder="profesor@rubato.org"
+        error={errors.email}
+      />
 
-      <div className="flex items-center gap-2 pt-2">
-        <button
-          type="submit"
-          className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer"
-        >
-          {initialData ? 'Actualizar Docente' : 'Registrar Docente'}
-        </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-        )}
-      </div>
+      <FormActions
+        submitLabel={initialData ? 'Actualizar Docente' : 'Registrar Docente'}
+        onCancel={onCancel}
+      />
     </form>
   );
 }
