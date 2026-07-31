@@ -7,6 +7,7 @@ import StudentForm from '../../components/forms/StudentForm';
 import TeacherForm from '../../components/forms/TeacherForm';
 import AdminForm from '../../components/forms/AdminForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
 import { Shield, RefreshCw, UserCheck, Edit, Trash2, Mail, Key, Copy, Check, X, Sparkles } from 'lucide-react';
@@ -289,47 +290,22 @@ export default function AdminDashboard() {
               {activeTab === 'teachers' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {teachers.map((t) => (
-                    <div
+                    <UserCard
                       key={t.id}
-                      className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                            <UserCheck className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-800">{t.name}</p>
-                            <span className="inline-block mt-0.5 px-2.5 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                              {t.specialty || t.especialidad}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Mail className="w-3.5 h-3.5" />
-                          <span className="truncate max-w-[150px]">{t.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setEditingItem(t)}
-                            className="p-1.5 text-slate-500 hover:text-[#6b0060] rounded-lg hover:bg-purple-50 transition-colors cursor-pointer"
-                            title="Editar docente"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTeacher(t)}
-                            className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="Eliminar docente"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                      name={t.name}
+                      email={t.email}
+                      subtitle={
+                        <span className="inline-block mt-0.5 px-2.5 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                          {t.specialty || t.especialidad}
+                        </span>
+                      }
+                      icon={UserCheck}
+                      iconColorClass="text-emerald-700"
+                      iconBgClass="bg-emerald-100"
+                      layout="vertical"
+                      onEdit={() => setEditingItem(t)}
+                      onDelete={() => handleDeleteTeacher(t)}
+                    />
                   ))}
                 </div>
               )}
@@ -357,46 +333,21 @@ export default function AdminDashboard() {
 
                   <div className="space-y-3">
                     {admins.map((a) => (
-                      <div
+                      <UserCard
                         key={a.id}
-                        className={`bg-white rounded-2xl p-4 border transition-all flex items-center justify-between ${
-                          currentAdmin?.id === a.id
-                            ? 'border-[#6b0060] shadow-sm ring-1 ring-[#6b0060]/20'
-                            : 'border-slate-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-purple-100 text-[#6b0060] flex items-center justify-center font-bold">
-                            <Shield className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-800 text-sm">{a.name}</p>
-                            <p className="text-xs text-slate-500">{a.email}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
+                        name={a.name}
+                        email={a.email}
+                        icon={Shield}
+                        layout="horizontal"
+                        highlighted={currentAdmin?.id === a.id}
+                        badge={
                           <span className="px-3 py-1 text-xs font-bold rounded-full bg-purple-100 text-[#6b0060] border border-purple-200">
                             SuperAdmin
                           </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setEditingItem(a)}
-                              className="p-1.5 text-slate-500 hover:text-[#6b0060] rounded-lg hover:bg-purple-50 transition-colors cursor-pointer"
-                              title="Editar administrador"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAdmin(a)}
-                              className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-                              title="Eliminar administrador"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                        }
+                        onEdit={() => setEditingItem(a)}
+                        onDelete={() => handleDeleteAdmin(a)}
+                      />
                     ))}
                   </div>
                 </div>

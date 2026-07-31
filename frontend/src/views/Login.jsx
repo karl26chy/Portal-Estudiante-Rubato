@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Lock, ArrowRight, AlertCircle, Music } from 'lucide-react';
 import Footer from '../components/Footer';
+import FormField from '../components/forms/FormField';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -111,33 +112,23 @@ export default function Login() {
 
             {/* Formulario */}
             <form onSubmit={handleCustomLogin} className="space-y-4">
-              <div>
-                <div className="relative">
-                  <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Usuario o correo"
-                    className="w-full pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 bg-white border border-slate-300 rounded-xl transition-all focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20"
-                    required
-                  />
-                </div>
-              </div>
+              <FormField
+                name="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={User}
+                placeholder="Usuario o correo"
+              />
 
-              <div>
-                <div className="relative">
-                  <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Contraseña"
-                    className="w-full pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 bg-white border border-slate-300 rounded-xl transition-all focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20"
-                    required
-                  />
-                </div>
-              </div>
+              <FormField
+                name="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={Lock}
+                placeholder="Contraseña"
+              />
 
               <button
                 type="submit"

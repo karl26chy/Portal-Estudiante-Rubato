@@ -18,9 +18,11 @@ export default function FormField({
 
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
-        {label}
-      </label>
+      {label && (
+        <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
+          {label}
+        </label>
+      )}
       <div className="relative">
         {Icon && (
           <Icon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3 pointer-events-none" />

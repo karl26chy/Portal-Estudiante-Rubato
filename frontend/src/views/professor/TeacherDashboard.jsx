@@ -5,6 +5,7 @@ import TabButton from '../../components/TabButton';
 import ClassForm from '../../components/forms/ClassForm';
 import ClassCard from '../../components/ClassCard';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
 import { Music, Calendar, Clock, User, RefreshCw, UserCheck } from 'lucide-react';
@@ -196,21 +197,18 @@ export default function TeacherDashboard() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map((student) => (
-                <div
+                <UserCard
                   key={student.id}
-                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all flex items-center gap-3"
-                >
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5 text-[#6b0060]" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="font-bold text-slate-800 text-sm truncate">{student.name}</p>
-                    <p className="text-xs text-slate-500">
+                  name={student.name}
+                  email={student.email}
+                  icon={User}
+                  layout="horizontal"
+                  subtitle={
+                    <span>
                       {student.age} años — <span className="font-semibold text-[#6b0060]">{student.instrument}</span>
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{student.email}</p>
-                  </div>
-                </div>
+                    </span>
+                  }
+                />
               ))}
             </div>
           </div>
