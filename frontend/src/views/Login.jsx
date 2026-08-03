@@ -8,7 +8,6 @@ import FormField from '../components/forms/FormField';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [imgError, setImgError] = useState(false);
@@ -18,7 +17,10 @@ export default function Login() {
 
   const handleCustomLogin = async (e) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) {
+      setErrorMessage('Ingresa tu usuario y contraseña.');
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -27,28 +29,6 @@ export default function Login() {
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Credenciales no válidas.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleQuickRoleLogin = async () => {
-    if (!role) return;
-
-    try {
-      setSubmitting(true);
-      setErrorMessage('');
-      const mockEmailMap = {
-        admin: 'admin@rubato.org',
-        professor: 'profesor@rubato.org',
-        student: 'estudiante@rubato.org'
-      };
-      const targetEmail = mockEmailMap[role];
-      const targetPassword = 'Rubato.2026*'; // Contraseña por defecto para pruebas
-      const loggedUser = await login(targetEmail, targetPassword, role);
-      navigate(`/${loggedUser.role}`);
-    } catch (err) {
-      setErrorMessage(err.message || 'Error en el acceso directo de prueba.');
     } finally {
       setSubmitting(false);
     }
@@ -140,37 +120,6 @@ export default function Login() {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
-
-            {/* Selector de Rol para Modo de Prueba */}
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-                <label className="block text-xs font-semibold text-[#6b0060] uppercase tracking-wider mb-2">
-                  Acceso rápido de prueba
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3 py-2 text-sm text-slate-800 focus:outline-none border border-purple-200 rounded-xl bg-white"
-                >
-                  <option value="" disabled>Seleccionar un rol para ingresar</option>
-                  <option value="student">Estudiante</option>
-                  <option value="professor">Profesor</option>
-                  <option value="admin">Administrador</option>
-                </select>
-
-                {role && (
-                  <button
-                    type="button"
-                    onClick={handleQuickRoleLogin}
-                    disabled={submitting}
-                    className="w-full mt-3 py-2.5 px-4 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 bg-[#6b0060] hover:bg-[#52004a] transition-colors"
-                  >
-                    <span>Ingresar como {role === 'admin' ? 'Admin' : role === 'professor' ? 'Profesor' : 'Estudiante'}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
 
           </div>
 

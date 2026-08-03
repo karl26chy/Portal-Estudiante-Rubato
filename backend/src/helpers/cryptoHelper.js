@@ -1,9 +1,13 @@
 // helpers/cryptoHelper.js
 const crypto = require('crypto');
 
-// Utilizar las claves desde las variables de entorno o usar valores por defecto en desarrollo (¡CUIDADO en producción!)
-const AES_SECRET_KEY = process.env.AES_SECRET_KEY || '9156ab072d5fb40aa62a57fe36f2626177833a007ebe156b0fbac31b66861f88';
-const AES_IV = process.env.AES_IV || 'ba7cf06fb8b68ef09f72d9f80cb5b6e5';
+// Las claves deben definirse exclusivamente por variables de entorno (en hexadecimal)
+const AES_SECRET_KEY = process.env.AES_SECRET_KEY;
+const AES_IV = process.env.AES_IV;
+
+if (!AES_SECRET_KEY || !AES_IV) {
+  throw new Error('Faltan las variables de entorno AES_SECRET_KEY y/o AES_IV. Defínelas en el archivo .env');
+}
 
 const key = Buffer.from(AES_SECRET_KEY, 'hex');
 const iv = Buffer.from(AES_IV, 'hex');

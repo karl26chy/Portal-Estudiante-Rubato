@@ -2,7 +2,7 @@
 const app = require('./app');
 const { testConnection } = require('./config/db');
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
 // Probar conexión a MySQL al iniciar si no estamos en Mock Mode
 if (process.env.MOCK_MODE !== 'true') {

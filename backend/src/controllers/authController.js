@@ -1,5 +1,5 @@
 // controllers/authController.js - Lógica de inicio de sesión y gestión de credenciales
-const { generateToken, verifyToken } = require('../utils/jwt');
+const { generateToken } = require('../utils/jwt');
 const authService = require('../services/authService');
 
 // POST /api/auth/login
@@ -31,11 +31,15 @@ async function login(req, res) {
     });
   } catch (error) {
     console.error('Error en login:', error);
-    
-    if (error.message === 'Usuario no encontrado' || error.message === 'Credenciales inválidas') {
+
+    if (error.message === 'Credenciales inválidas' || error.message === 'El usuario no tiene el rol solicitado.') {
       return res.status(401).json({ error: error.message });
     }
-    
+
+    if (error.message === 'Debe proporcionar un usuario o correo.' || error.message === 'Contraseña requerida') {
+      return res.status(400).json({ error: error.message });
+    }
+
     return res.status(500).json({ error: 'Error interno en el servidor durante el inicio de sesión.' });
   }
 }
@@ -72,7 +76,9 @@ async function register(req, res) {
     });
   } catch (error) {
     console.error('Error en register:', error);
-    if (error.message === 'El correo electrónico ya está en uso.' || error.message === 'Faltan campos obligatorios para el registro.') {
+    if (error.message === 'El correo electrónico ya está en uso.'
+      || error.message === 'Faltan campos obligatorios para el registro.'
+      || error.message === 'Rol inválido. Debe ser ADMIN, DOCENTE o ESTUDIANTE.') {
       return res.status(400).json({ error: error.message });
     }
     return res.status(500).json({ error: 'Error interno en el servidor durante el registro.' });

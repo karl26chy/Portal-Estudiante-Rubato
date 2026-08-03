@@ -1,10 +1,7 @@
 import React from 'react';
 import { Calendar, Clock, User, Trash2 } from 'lucide-react';
-import { useToast } from './Toast';
 
 export default function ClassCard({ classData, onDelete }) {
-  const { addToast } = useToast();
-
   const handleDelete = () => {
     if (onDelete) {
       onDelete(classData);

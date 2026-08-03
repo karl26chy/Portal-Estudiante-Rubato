@@ -9,11 +9,6 @@ async function findByUsernameOrEmail(identifier) {
   return rows[0] || null;
 }
 
-async function findByRole(role) {
-  const [rows] = await pool.query('SELECT * FROM users WHERE role = ?', [role]);
-  return rows;
-}
-
 async function createUser(userData) {
   const { nombre, apellido, email, username, role, password_hash, password_encrypted } = userData;
   const [result] = await pool.query(
@@ -21,13 +16,6 @@ async function createUser(userData) {
     [nombre, apellido, email, username, role, password_hash, password_encrypted]
   );
   return result.insertId;
-}
-
-async function getAllUsers() {
-  const [rows] = await pool.query(
-    'SELECT id, nombre, apellido, email, username, role, created_at FROM users ORDER BY created_at DESC'
-  );
-  return rows;
 }
 
 async function getEncryptedPasswordById(id) {
@@ -39,10 +27,7 @@ async function getEncryptedPasswordById(id) {
 }
 
 module.exports = {
-  findByUsuario: findByUsernameOrEmail,
   findByUsernameOrEmail,
-  findByRole,
   createUser,
-  getAllUsers,
   getEncryptedPasswordById
 };

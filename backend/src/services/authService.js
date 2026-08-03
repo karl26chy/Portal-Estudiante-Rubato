@@ -12,8 +12,9 @@ async function authenticateUser(identifier, password, roleRequested) {
 
   const user = await userRepository.findByUsernameOrEmail(identifier);
 
+  // Mensaje genérico para no permitir enumeración de usuarios
   if (!user) {
-    throw new Error('Usuario no encontrado');
+    throw new Error('Credenciales inválidas');
   }
 
   // Verificar si se solicitó un rol específico (opcional, pero útil si hay múltiples portales)
@@ -51,6 +52,12 @@ async function registerUser(userData) {
     throw new Error('Faltan campos obligatorios para el registro.');
   }
 
+  const VALID_ROLES = ['ADMIN', 'DOCENTE', 'ESTUDIANTE'];
+  const normalizedRole = role.toUpperCase();
+  if (!VALID_ROLES.includes(normalizedRole)) {
+    throw new Error('Rol inválido. Debe ser ADMIN, DOCENTE o ESTUDIANTE.');
+  }
+
   // Verificar que el email no exista
   const existingUserByEmail = await userRepository.findByUsernameOrEmail(email);
   if (existingUserByEmail) {
@@ -81,7 +88,7 @@ async function registerUser(userData) {
     apellido,
     email,
     username,
-    role: role.toUpperCase(),
+    role: normalizedRole,
     password_hash,
     password_encrypted
   };

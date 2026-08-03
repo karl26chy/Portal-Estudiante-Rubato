@@ -10,7 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
-import { Shield, RefreshCw, UserCheck, Edit, Trash2, Mail, Key, Copy, Check, X, Sparkles, Eye } from 'lucide-react';
+import { Shield, RefreshCw, UserCheck, Copy, Check, X, Sparkles } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('students');

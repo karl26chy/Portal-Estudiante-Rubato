@@ -1,7 +1,7 @@
 import React from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { GraduationCap, Calendar, Award, CheckCircle, Clock, MapPin, User, FileText, Music } from 'lucide-react';
+import { GraduationCap, Calendar, Award, CheckCircle, Music } from 'lucide-react';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useAuth } from '../../context/AuthContext';
 import StatCard from '../../components/StatCard';

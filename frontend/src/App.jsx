@@ -51,7 +51,7 @@ export default function App() {
 
               {/* Acceso Denegado y Redirecciones por Defecto */}
               <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route path="*" element={<Navigate to="/student" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
         </ToastProvider>

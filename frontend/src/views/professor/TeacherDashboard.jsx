@@ -8,7 +8,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
-import { Music, Calendar, Clock, User, RefreshCw, UserCheck } from 'lucide-react';
+import { Calendar, User, RefreshCw, UserCheck } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState('create');

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDataManager } from '../context/DataManagerContext';
-import { Music, LogOut, Shield, GraduationCap, UserCheck, Menu, X } from 'lucide-react';
+import { LogOut, Shield, GraduationCap, UserCheck, Menu, X } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -22,9 +22,6 @@ export default function Header() {
     switch (role) {
       case 'admin':
       case 'SuperAdmin':
-      case 'Super Admin':
-      case 'Gestor Académico':
-      case 'Auxiliar':
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-[#6b0060]">
             <Shield className="w-3.5 h-3.5" /> SuperAdmin
@@ -93,7 +90,7 @@ export default function Header() {
 
               {/* Menú de Navegación Rápida */}
               <nav className="flex items-center gap-1">
-                {(user?.role === 'admin' || !user) && (
+                {user?.role === 'admin' && (
                   <Link
                     to="/admin"
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
@@ -105,7 +102,7 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
-                {(user?.role === 'admin' || user?.role === 'professor' || !user) && (
+                {(user?.role === 'admin' || user?.role === 'professor') && (
                   <Link
                     to="/professor"
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${

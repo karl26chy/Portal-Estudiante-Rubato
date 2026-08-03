@@ -78,19 +78,20 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      // Generación automática de usuario y contraseña para el estudiante
-      const sanitizedName = formData.name.trim().toLowerCase().replace(/\s+/g, '.');
-      const generatedUsername = `${sanitizedName}@rubato.org`;
-      const generatedPassword = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
-
       const studentPayload = {
         ...formData,
         age: Number(formData.age),
-        credentials: {
-          usuario: generatedUsername,
-          password: generatedPassword,
-        }
       };
+
+      // Generar credenciales SOLO al crear un estudiante nuevo.
+      // Al editar se conservan las credenciales existentes.
+      if (!initialData) {
+        const sanitizedName = formData.name.trim().toLowerCase().replace(/\s+/g, '.');
+        studentPayload.credentials = {
+          usuario: `${sanitizedName}@rubato.org`,
+          password: `Rubato${Math.floor(1000 + Math.random() * 9000)}!`,
+        };
+      }
 
       onSubmit(studentPayload);
       if (!initialData) {

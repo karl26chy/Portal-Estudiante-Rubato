@@ -102,7 +102,8 @@ export function DataManagerProvider({ children }) {
   };
 
   const updateStudent = (id, updatedStudent) => {
-    const newStudents = students.map(s => s.id === id ? { ...updatedStudent, id } : s);
+    // Merge con el registro existente para conservar campos no enviados (p. ej. credentials)
+    const newStudents = students.map(s => s.id === id ? { ...s, ...updatedStudent, id } : s);
     setStudents(newStudents);
     saveToLocalStorage('rubato_students', newStudents);
   };

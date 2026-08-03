@@ -7,24 +7,49 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const checkAuth = () => {
+  const clearSession = () => {
+    localStorage.removeItem('rubato_active_user');
+    setUser(null);
+  };
+
+  const checkAuth = async () => {
+    const savedUser = localStorage.getItem('rubato_active_user');
     try {
       setLoading(true);
-      const savedUser = localStorage.getItem('rubato_active_user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      } else {
-        // Usuario por defecto si no hay sesión iniciada
-        const defaultUser = {
-          nombre: "Admin Fundación Rubato",
-          usuario: "admin@rubato.org",
-          role: "admin"
-        };
-        setUser(defaultUser);
-        localStorage.setItem('rubato_active_user', JSON.stringify(defaultUser));
+      if (!savedUser) {
+        setUser(null);
+        return;
       }
+
+      // Validar la sesión contra el backend (cookie JWT HttpOnly)
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          const sessionUser = {
+            id: data.user.id,
+            nombre: data.user.nombre,
+            usuario: data.user.usuario,
+            role: data.user.role.toLowerCase()
+          };
+          setUser(sessionUser);
+          localStorage.setItem('rubato_active_user', JSON.stringify(sessionUser));
+          return;
+        }
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        // Token expirado o inválido: sesión no válida
+        clearSession();
+      }
+      // Si hay otro error (p. ej. backend caído), conservar la sesión local
     } catch (err) {
-      setUser(null);
+      // Error de red: conservar la sesión local almacenada
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        clearSession();
+      }
     } finally {
       setLoading(false);
     }
@@ -39,7 +64,7 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,13 +95,14 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Función de Logout
+  // Función de Logout: invalida la cookie JWT en el servidor y limpia la sesión local
   const logout = async () => {
     try {
-      localStorage.removeItem('rubato_active_user');
-      setUser(null);
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch (err) {
-      console.error('Error al cerrar sesión:', err);
+      console.error('Error al cerrar sesión en el servidor:', err);
+    } finally {
+      clearSession();
     }
   };
 
