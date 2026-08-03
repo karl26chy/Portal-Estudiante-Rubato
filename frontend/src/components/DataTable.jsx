@@ -32,7 +32,9 @@ export default function DataTable({ columns, data, onEdit, onDelete, onViewCrede
               <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3 text-sm text-slate-700">
-                    {col.render ? col.render(row) : row[col.key]}
+                    {col.render
+                      ? col.render(row[col.key], row)
+                      : row[col.key]}
                   </td>
                 ))}
                 <td className="px-4 py-3 text-center">
