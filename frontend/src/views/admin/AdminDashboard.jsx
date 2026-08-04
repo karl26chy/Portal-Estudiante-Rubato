@@ -6,7 +6,7 @@ import DataTable from '../../components/DataTable';
 import StudentForm from '../../components/forms/StudentForm';
 import TeacherForm from '../../components/forms/TeacherForm';
 import AdminForm from '../../components/forms/AdminForm';
-import ClassForm from '../../components/forms/ClassForm';
+import ClassForm, { formatTime12h } from '../../components/forms/ClassForm';
 import ClassCard from '../../components/ClassCard';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
@@ -252,17 +252,17 @@ export default function AdminDashboard() {
             </div>
 
             {/* Simular Sesión / Estado Admin Activo (SuperAdmin) */}
-            <div className="flex items-center gap-3 bg-white p-2.5 px-4 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060]">
+            <div className="flex items-center gap-3 bg-white p-2.5 px-4 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
+              <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060] shrink-0">
                 <Shield className="w-5 h-5" />
               </div>
-              <div className="text-xs">
-                <p className="font-bold text-slate-800">{currentAdmin?.name || 'Administrador'}</p>
+              <div className="text-xs min-w-0">
+                <p className="font-bold text-slate-800 truncate">{currentAdmin?.name || 'Administrador'}</p>
                 <p className="text-[#6b0060] font-semibold">SuperAdmin</p>
               </div>
               <button
                 onClick={handleSimulateNextAdmin}
-                className="ml-2 p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-[#6b0060] transition-colors cursor-pointer"
+                className="ml-2 p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-[#6b0060] transition-colors cursor-pointer shrink-0"
                 title="Simular Cambio de Sesión de Administrador"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -271,8 +271,8 @@ export default function AdminDashboard() {
           </div>
 
           {/* Navegación por Pestañas */}
-          <div className="mb-6 border-b border-slate-200">
-            <div className="flex gap-2 flex-wrap">
+          <div className="mb-6 border-b border-slate-200 pb-px">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
               <TabButton
                 label="1. Estudiantes"
                 isActive={activeTab === 'students'}
@@ -360,7 +360,7 @@ export default function AdminDashboard() {
 
               {/* 1. Tabla de Estudiantes */}
               {activeTab === 'students' && (
-                <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 overflow-x-auto">
+                <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
                   <DataTable
                     columns={studentColumns}
                     data={students}
@@ -402,23 +402,23 @@ export default function AdminDashboard() {
               {/* 3. Lista de Administradores (Rol Único SuperAdmin) */}
               {activeTab === 'admins' && (
                 <div className="space-y-4">
-                  <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-[#6b0060] uppercase tracking-wider">
-                        Sesión Activa Simulada
-                      </p>
-                      <p className="text-sm font-bold text-slate-800">
-                        {currentAdmin?.name} — <span className="text-[#6b0060]">SuperAdmin</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSimulateNextAdmin}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Simular Siguiente</span>
-                    </button>
+                  <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#6b0060] uppercase tracking-wider">
+                      Sesión Activa Simulada
+                    </p>
+                    <p className="text-sm font-bold text-slate-800 truncate">
+                      {currentAdmin?.name} — <span className="text-[#6b0060]">SuperAdmin</span>
+                    </p>
                   </div>
+                  <button
+                    onClick={handleSimulateNextAdmin}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer shrink-0 w-full sm:w-auto justify-center"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Simular Siguiente</span>
+                  </button>
+                </div>
 
                   <div className="space-y-3">
                     {admins.map((a) => (
@@ -445,7 +445,7 @@ export default function AdminDashboard() {
 
               {/* 4. Lista de Clases Creadas */}
               {activeTab === 'classes' && (
-                <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
+                <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
                   {classes.length === 0 ? (
                     <div className="text-center py-10 text-slate-500">
                       <BookOpen className="w-12 h-12 mx-auto mb-2 text-slate-300" />
@@ -455,16 +455,16 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       {classes.map((cls) => (
                         <div key={cls.id} className="p-4 rounded-xl border border-slate-200 hover:border-purple-300 transition-all bg-white shadow-xs">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
+                          <div className="flex justify-between items-start gap-3 mb-2">
+                            <div className="min-w-0">
                               <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-[#6b0060] mb-1">
                                 {cls.module || 'Módulo Pénsum'} {cls.semester ? `• ${cls.semester}` : ''}
                               </span>
-                              <h3 className="font-bold text-slate-900 text-base">{cls.subject}</h3>
+                              <h3 className="font-bold text-slate-900 text-base break-words">{cls.subject}</h3>
                             </div>
                             <button
                               onClick={() => handleDeleteClass(cls)}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
                               title="Eliminar Clase"
                             >
                               <X className="w-4 h-4" />
@@ -473,7 +473,7 @@ export default function AdminDashboard() {
                           
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 mt-2">
                             <p><strong>Docente:</strong> {cls.teacherName || cls.profesor || 'Por asignar'}</p>
-                            <p><strong>Horario:</strong> {cls.horario || `${cls.day || ''} ${cls.time || ''}`}</p>
+                            <p><strong>Horario:</strong> {cls.horario && (cls.horario.includes('AM') || cls.horario.includes('PM')) ? cls.horario : `${cls.day || 'Lunes'} ${formatTime12h(cls.startTime || '08:00')} - ${formatTime12h(cls.endTime || '10:00')}`}</p>
                           </div>
 
                           {cls.studentNames && cls.studentNames.length > 0 && (
@@ -506,17 +506,17 @@ export default function AdminDashboard() {
       {/* Modal / Tarjeta con Información de Acceso (Credenciales de Estudiante) */}
       {generatedCredentialsModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060] shrink-0">
                   <Sparkles className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif]">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif] truncate">
                     {generatedCredentialsModal.title || 'Credenciales Generadas'}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 truncate">
                     {generatedCredentialsModal.subtitle || 'Acceso automático'}
                   </p>
                 </div>
@@ -558,8 +558,8 @@ export default function AdminDashboard() {
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Contraseña inicial
                 </label>
-                <div className="flex items-center justify-between bg-white border border-purple-200 rounded-lg p-2.5 px-3">
-                  <span className="text-sm font-bold text-slate-900 tracking-wider">
+                <div className="flex items-center justify-between bg-white border border-purple-200 rounded-lg p-2.5 px-3 gap-2">
+                  <span className="text-sm font-bold text-slate-900 tracking-wider break-all min-w-0">
                     {generatedCredentialsModal.password}
                   </span>
                   <button

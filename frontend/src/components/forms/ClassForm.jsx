@@ -6,6 +6,24 @@ import FormField from './FormField';
 import FormActions from './FormActions';
 import { MODULOS_OFI, SEMESTRES_POR_MODULO, ASIGNATURAS_POR_MODULO } from '../../constants/pensumData';
 
+export const formatTime12h = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.toUpperCase().includes('AM') || timeStr.toUpperCase().includes('PM')) {
+    return timeStr;
+  }
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return timeStr;
+  
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  const minStr = String(m).padStart(2, '0');
+  const hourStr = String(hour12).padStart(2, '0');
+  return `${hourStr}:${minStr} ${period}`;
+};
+
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 export default function ClassForm({ onSubmit, onCancel }) {
@@ -98,13 +116,17 @@ export default function ClassForm({ onSubmit, onCancel }) {
     if (validate()) {
       const assignedTeacher = teachers.find(t => t.id === Number(formData.teacherId) || t.id === formData.teacherId);
       const enrolledStudents = students.filter(s => formData.selectedStudentIds.includes(s.id));
+      const formattedStart = formatTime12h(formData.startTime);
+      const formattedEnd = formatTime12h(formData.endTime);
 
       const classPayload = {
         ...formData,
+        startTimeFormatted: formattedStart,
+        endTimeFormatted: formattedEnd,
         teacherName: assignedTeacher ? assignedTeacher.name : 'Docente Asignado',
         studentCount: enrolledStudents.length,
         studentNames: enrolledStudents.map(s => s.name),
-        horario: `${formData.day} ${formData.startTime} - ${formData.endTime}`,
+        horario: `${formData.day} ${formattedStart} - ${formattedEnd}`,
       };
 
       onSubmit(classPayload);
@@ -236,16 +258,16 @@ export default function ClassForm({ onSubmit, onCancel }) {
                       : 'bg-white border-slate-200 hover:border-purple-300 text-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <input
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => {}}
-                      className="w-4 h-4 text-[#6b0060] rounded border-slate-300 focus:ring-[#6b0060]"
+                      className="w-4 h-4 text-[#6b0060] rounded border-slate-300 focus:ring-[#6b0060] shrink-0"
                     />
-                    <span className="text-xs">{student.name}</span>
+                    <span className="text-xs truncate">{student.name}</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-medium">
+                  <span className="text-[11px] text-slate-500 font-medium hidden sm:block shrink-0">
                     {student.instrument} — {student.module || 'Módulo 1'} {student.semester ? `(${student.semester})` : ''}
                   </span>
                 </label>

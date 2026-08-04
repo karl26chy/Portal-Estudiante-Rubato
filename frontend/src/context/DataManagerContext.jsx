@@ -23,9 +23,9 @@ const initialAdmins = [
 ];
 
 const initialClasses = [
-  { id: 1, studentId: 1, studentName: "Ana López", subject: "Piano Avanzado", day: "Lunes", time: "16:00" },
-  { id: 2, studentId: 2, studentName: "Carlos Ruiz", subject: "Violín Intermedio", day: "Martes", time: "17:30" },
-  { id: 3, studentId: 3, studentName: "María Fernández", subject: "Guitarra Básica", day: "Miércoles", time: "15:00" },
+  { id: 1, studentId: 1, studentName: "Ana López", subject: "Coro", module: "Módulo 1", semester: "Módulo 1-1", teacherName: "Maestro Carlos Silva", day: "Lunes", startTime: "08:00", endTime: "10:00", horario: "Lunes 08:00 AM - 10:00 AM", studentNames: ["Ana López"] },
+  { id: 2, studentId: 2, studentName: "Carlos Ruiz", subject: "Armonía", module: "Módulo 2", semester: "Módulo 2-1", teacherName: "Dra. María González", day: "Martes", startTime: "14:00", endTime: "16:00", horario: "Martes 02:00 PM - 04:00 PM", studentNames: ["Carlos Ruiz", "Jorge Castillo"] },
+  { id: 3, studentId: 3, studentName: "María Fernández", subject: "Pedagogía", module: "Módulo 3", semester: "Módulo 3-1", teacherName: "Prof. Laura Sánchez", day: "Miércoles", startTime: "10:00", endTime: "12:00", horario: "Miércoles 10:00 AM - 12:00 PM", studentNames: ["María Fernández"] },
 ];
 
 export function DataManagerProvider({ children }) {
