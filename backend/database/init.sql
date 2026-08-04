@@ -25,10 +25,14 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `classes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `asignatura` VARCHAR(150) NOT NULL,
+  `modulo` VARCHAR(50) DEFAULT 'Módulo 1',
+  `semestre` VARCHAR(50) DEFAULT 'Módulo 1-1',
   `profesor_nombre` VARCHAR(150) NOT NULL,
   `profesor_titulo` VARCHAR(50) DEFAULT 'profesor',
   `horario` VARCHAR(100) NOT NULL,
-  `aula` VARCHAR(50) NOT NULL,
+  `hora_inicio` TIME NULL,
+  `hora_fin` TIME NULL,
+  `aula` VARCHAR(50) NOT NULL DEFAULT 'Sala 1',
   `nota` VARCHAR(20) DEFAULT 'N/A',
   `asistencia` VARCHAR(20) DEFAULT '100%',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

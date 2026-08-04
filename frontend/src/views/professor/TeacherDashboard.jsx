@@ -11,20 +11,14 @@ import { useToast } from '../../components/Toast';
 import { Calendar, User, RefreshCw, UserCheck } from 'lucide-react';
 
 export default function TeacherDashboard() {
-  const [activeTab, setActiveTab] = useState('create');
+  const [activeTab, setActiveTab] = useState('schedule');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, item: null });
   const [simulatedTeacher, setSimulatedTeacher] = useState(null);
 
-  const { classes, students, teachers, addClass, deleteClass } = useDataManager();
+  const { classes, students, teachers, deleteClass } = useDataManager();
   const { addToast } = useToast();
 
   const activeTeacher = simulatedTeacher || (teachers.length > 0 ? teachers[0] : null);
-
-  const handleClassSubmit = (data) => {
-    addClass(data);
-    addToast('Clase programada exitosamente', 'success');
-    setActiveTab('schedule');
-  };
 
   const handleDeleteClass = (classItem) => {
     setConfirmDialog({ isOpen: true, item: classItem });
@@ -70,7 +64,7 @@ export default function TeacherDashboard() {
                 Panel del Docente
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
-                Gestión de clases de instrumento, horarios de ensayo y alumnos
+                Consulta de clases asignadas, horarios de ensayo y lista de alumnos
               </p>
             </div>
             
@@ -108,29 +102,36 @@ export default function TeacherDashboard() {
           <div className="mb-6 border-b border-slate-200">
             <div className="flex gap-2">
               <TabButton
-                label="Crear Clase"
-                isActive={activeTab === 'create'}
-                onClick={() => setActiveTab('create')}
-              />
-              <TabButton
-                label="Mi Horario"
+                label="Mi Horario y Clases"
                 isActive={activeTab === 'schedule'}
                 onClick={() => setActiveTab('schedule')}
+              />
+              <TabButton
+                label="Gestión de Clases (Info)"
+                isActive={activeTab === 'notice'}
+                onClick={() => setActiveTab('notice')}
               />
             </div>
           </div>
 
-          {/* Grid de Formulario y Horarios */}
+          {/* Grid de Horarios y Consulta */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
-                {activeTab === 'create' ? 'Crear Nueva Clase' : 'Resumen por Día'}
+                {activeTab === 'notice' ? 'Gestión Exclusiva de Administrador' : 'Resumen por Día'}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
-                {activeTab === 'create' && (
-                  <ClassForm onSubmit={handleClassSubmit} />
-                )}
-                {activeTab === 'schedule' && (
+                {activeTab === 'notice' ? (
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl text-xs text-[#6b0060] space-y-2">
+                    <p className="font-bold text-sm">🔒 Permiso Restringido</p>
+                    <p>
+                      La creación y modificación de clases es una función <strong>exclusiva del Administrador</strong>.
+                    </p>
+                    <p className="text-slate-600">
+                      Como docente, puedes consultar tus horarios y la lista de estudiantes inscritos en el panel de la derecha.
+                    </p>
+                  </div>
+                ) : (
                   <div className="space-y-2.5">
                     {daysOfWeek.map((day) => {
                       const dayClasses = getClassesByDay(day);

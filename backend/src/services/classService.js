@@ -37,15 +37,24 @@ async function getAllClasses() {
 
 async function createClass(classData, user) {
   const isMockMode = process.env.MOCK_MODE === 'true';
-  const { asignatura, horario, aula } = classData;
+  const { asignatura, module, semester, day, startTime, endTime, horario, teacherName, studentNames } = classData;
   
+  const finalHorario = horario || `${day || 'Lunes'} ${startTime || '08:00'} - ${endTime || '10:00'}`;
+
   if (isMockMode) {
     const newClass = {
       id: Date.now(),
-      asignatura: asignatura || 'Nueva Asignatura Musical',
-      profesor: user.nombre,
-      horario: horario || 'Por definir',
-      aula: aula || 'Sala por asignar',
+      asignatura: asignatura || 'Asignatura Musical',
+      subject: asignatura || 'Asignatura Musical',
+      module: module || 'Módulo 1',
+      semester: semester || 'Módulo 1-1',
+      profesor: teacherName || user.nombre,
+      teacherName: teacherName || user.nombre,
+      horario: finalHorario,
+      startTime: startTime || '08:00',
+      endTime: endTime || '10:00',
+      studentNames: studentNames || [],
+      aula: 'Sala por asignar',
       nota: 'N/A',
       asistencia: '100%'
     };
@@ -55,11 +64,15 @@ async function createClass(classData, user) {
 
   // Lógica con BD
   const newClassData = {
-    asignatura: asignatura || 'Nueva Asignatura Musical',
-    profesor_nombre: user.nombre,
-    profesor_titulo: 'profesor', // Default para nuevos registros por la UI actual
-    horario: horario || 'Por definir',
-    aula: aula || 'Sala por asignar',
+    asignatura: asignatura || 'Asignatura Musical',
+    modulo: module || 'Módulo 1',
+    semestre: semester || 'Módulo 1-1',
+    profesor_nombre: teacherName || user.nombre,
+    profesor_titulo: 'profesor',
+    horario: finalHorario,
+    hora_inicio: startTime || '08:00:00',
+    hora_fin: endTime || '10:00:00',
+    aula: 'Sala 1',
     nota: 'N/A',
     asistencia: '100%'
   };
@@ -70,12 +83,18 @@ async function createClass(classData, user) {
   const classObj = {
     id: createdDbClass.id,
     asignatura: createdDbClass.asignatura,
+    subject: createdDbClass.asignatura,
+    module: createdDbClass.modulo,
+    semester: createdDbClass.semestre,
     horario: createdDbClass.horario,
+    startTime: startTime,
+    endTime: endTime,
+    studentNames: studentNames || [],
     aula: createdDbClass.aula,
     nota: createdDbClass.nota,
     asistencia: createdDbClass.asistencia
   };
-  classObj[createdDbClass.profesor_titulo.toLowerCase()] = createdDbClass.profesor_nombre;
+  classObj[createdDbClass.profesor_titulo ? createdDbClass.profesor_titulo.toLowerCase() : 'profesor'] = createdDbClass.profesor_nombre;
   
   return classObj;
 }

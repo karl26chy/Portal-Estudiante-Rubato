@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 import FormField from '../components/forms/FormField';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -17,7 +17,7 @@ export default function Login() {
 
   const handleCustomLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!usuario.trim() || !password) {
       setErrorMessage('Ingresa tu usuario y contraseña.');
       return;
     }
@@ -25,7 +25,7 @@ export default function Login() {
     try {
       setSubmitting(true);
       setErrorMessage('');
-      const loggedUser = await login(email, password);
+      const loggedUser = await login(usuario.trim(), password);
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Credenciales no válidas.');
@@ -81,7 +81,7 @@ export default function Login() {
               Iniciar sesión
             </h2>
             <p className="text-sm text-slate-500 text-center mb-6">
-              Acceder con tu cuenta institucional
+              Ingresa tus credenciales institucionales
             </p>
 
             {errorMessage && (
@@ -94,15 +94,17 @@ export default function Login() {
             {/* Formulario */}
             <form onSubmit={handleCustomLogin} className="space-y-4">
               <FormField
-                name="email"
+                label="Usuario"
+                name="usuario"
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
                 icon={User}
-                placeholder="Usuario o correo"
+                placeholder="Usuario (ej: carlos.rubato48)"
               />
 
               <FormField
+                label="Contraseña"
                 name="password"
                 type="password"
                 value={password}

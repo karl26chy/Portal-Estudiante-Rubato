@@ -3,11 +3,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const DataManagerContext = createContext(null);
 
 const initialStudents = [
-  { id: 1, name: "Ana López", birthdate: "2010-05-14", age: 16, instrument: "Piano", email: "ana.lopez@rubato.org" },
-  { id: 2, name: "Carlos Ruiz", birthdate: "2012-08-20", age: 14, instrument: "Violín", email: "carlos.ruiz@rubato.org" },
-  { id: 3, name: "María Fernández", birthdate: "2014-03-11", age: 12, instrument: "Guitarra", email: "maria.fernandez@rubato.org" },
-  { id: 4, name: "Jorge Castillo", birthdate: "2016-11-05", age: 10, instrument: "Arpa", email: "jorge.castillo@rubato.org" },
-  { id: 5, name: "Sofía Morales", birthdate: "2018-01-29", age: 8, instrument: "Piano", email: "sofia.morales@rubato.org" },
+  { id: 1, name: "Ana López", birthdate: "2010-05-14", age: 16, instrument: "Piano", email: "ana.lopez@rubato.org", phone: "3001234567", username: "ana.rubato12", password: "Rubato.2026*", module: "Módulo 1", semester: "Módulo 1-1" },
+  { id: 2, name: "Carlos Ruiz", birthdate: "2012-08-20", age: 14, instrument: "Violín", email: "carlos.ruiz@rubato.org", phone: "3109876543", username: "carlos.rubato48", password: "Rubato.2026*", module: "Módulo 1", semester: "Módulo 1-4" },
+  { id: 3, name: "María Fernández", birthdate: "2014-03-11", age: 12, instrument: "Guitarra", email: "maria.fernandez@rubato.org", phone: "3204567890", username: "maria.rubato35", password: "Rubato.2026*", module: "Módulo 2", semester: "Módulo 2-3" },
+  { id: 4, name: "Jorge Castillo", birthdate: "2016-11-05", age: 10, instrument: "Batería", email: "jorge.castillo@rubato.org", phone: "3156543210", username: "jorge.rubato77", password: "Rubato.2026*", module: "Módulo 2", semester: "Módulo 2-4" },
+  { id: 5, name: "Sofía Morales", birthdate: "2018-01-29", age: 8, instrument: "Piano", email: "sofia.morales@rubato.org", phone: "3018889900", username: "sofia.rubato91", password: "Rubato.2026*", module: "Módulo 3", semester: "Módulo 3-2" },
 ];
 
 const initialProfessors = [

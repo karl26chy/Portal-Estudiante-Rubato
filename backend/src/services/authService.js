@@ -65,12 +65,12 @@ async function registerUser(userData) {
   }
 
   // Generar username único
-  let baseUsername = generateBaseUsername(nombre, apellido);
-  let username = baseUsername;
-  let suffix = 1;
+  let baseUsername = generateBaseUsername(nombre);
+  let randomNum = Math.floor(10 + Math.random() * 90);
+  let username = `${baseUsername}${randomNum}`;
   while (await userRepository.findByUsernameOrEmail(username)) {
-    username = `${baseUsername}${String(suffix).padStart(2, '0')}`;
-    suffix++;
+    randomNum = Math.floor(10 + Math.random() * 90);
+    username = `${baseUsername}${randomNum}`;
   }
 
   // Generar contraseña y cifrar

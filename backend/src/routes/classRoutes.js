@@ -11,7 +11,7 @@ router.use(authenticateJWT);
 // Obtener clases (accesible para estudiantes, profesores y admin)
 router.get('/', getClasses);
 
-// Crear clase (restringido a admin y docentes)
-router.post('/', requireRole(['ADMIN', 'DOCENTE']), createClass);
+// Crear clase (restringido exclusivamente a rol ADMIN)
+router.post('/', requireRole('ADMIN'), createClass);
 
 module.exports = router;

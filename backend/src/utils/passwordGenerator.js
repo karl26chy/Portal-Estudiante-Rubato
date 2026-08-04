@@ -2,11 +2,10 @@
 const crypto = require('crypto');
 
 /**
- * Genera un username base usando nombre y apellido.
- * Convierte a minúsculas, remueve acentos y espacios.
- * Ej: 'Juan' y 'Pérez' -> 'juan.perez'
+ * Genera un username base usando el primer nombre.
+ * Ej: 'Carlos' -> 'carlos.rubato'
  */
-function generateBaseUsername(nombre, apellido) {
+function generateBaseUsername(nombre) {
   const sanitize = (str) =>
     str
       .toLowerCase()
@@ -14,9 +13,8 @@ function generateBaseUsername(nombre, apellido) {
       .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
       .replace(/[^a-z0-9]/g, ''); // Quitar caracteres especiales y espacios
 
-  const nom = sanitize(nombre);
-  const ape = sanitize(apellido);
-  return `${nom}.${ape}`;
+  const firstName = sanitize(nombre.split(' ')[0]);
+  return `${firstName}.rubato`;
 }
 
 /**

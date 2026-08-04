@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Mail, Music, Sparkles } from 'lucide-react';
+import { Calendar, User, Mail, Music, Sparkles, Layers, BookOpen, Phone } from 'lucide-react';
 import FormField from './FormField';
 import FormActions from './FormActions';
+import { INSTRUMENTOS_OFI, INSTRUMENTOS_CATEGORIZADOS, MODULOS_OFI, SEMESTRES_POR_MODULO } from '../../constants/pensumData';
 
 export default function StudentForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -10,6 +11,9 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     age: '',
     instrument: '',
     email: '',
+    phone: '',
+    module: '',
+    semester: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -35,9 +39,12 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         age: computedAge,
         instrument: initialData.instrument || '',
         email: initialData.email || '',
+        phone: initialData.phone || initialData.celular || '',
+        module: initialData.module || '',
+        semester: initialData.semester || '',
       });
     } else {
-      setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '' });
+      setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
     }
   }, [initialData]);
 
@@ -54,6 +61,18 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     }
   };
 
+  const handleModuleChange = (e) => {
+    const selectedMod = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      module: selectedMod,
+      semester: '' // reiniciar semestre si se cambia el módulo
+    }));
+    if (errors.module) {
+      setErrors(prev => ({ ...prev, module: '', semester: '' }));
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.name.trim() || formData.name.length < 3) {
@@ -65,12 +84,22 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
       newErrors.birthdate = 'La fecha ingresada no corresponde a una edad válida (3-100 años)';
     }
     if (!formData.instrument.trim()) {
-      newErrors.instrument = 'El instrumento es requerido';
+      newErrors.instrument = 'El instrumento es obligatorio (seleccione de la lista)';
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email || !emailRegex.test(formData.email)) {
       newErrors.email = 'Ingrese un correo electrónico válido';
     }
+    if (!formData.phone || formData.phone.trim().length < 7) {
+      newErrors.phone = 'Ingrese un número de celular válido (al menos 7 dígitos)';
+    }
+    if (!formData.module) {
+      newErrors.module = 'Seleccione un módulo';
+    }
+    if (!formData.semester) {
+      newErrors.semester = 'Seleccione un semestre';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,18 +113,31 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
       };
 
       // Generar credenciales SOLO al crear un estudiante nuevo.
-      // Al editar se conservan las credenciales existentes.
+      // Formato usuario: primerNombre.rubato + número aleatorio (ej: carlos.rubato48) sin @
       if (!initialData) {
-        const sanitizedName = formData.name.trim().toLowerCase().replace(/\s+/g, '.');
+        const firstName = formData.name
+          .trim()
+          .split(' ')[0]
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, '');
+        
+        const randomNum = Math.floor(10 + Math.random() * 90);
+        const username = `${firstName}.rubato${randomNum}`;
+        const autoPassword = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+
+        studentPayload.username = username;
+        studentPayload.password = autoPassword;
         studentPayload.credentials = {
-          usuario: `${sanitizedName}@rubato.org`,
-          password: `Rubato${Math.floor(1000 + Math.random() * 9000)}!`,
+          usuario: username,
+          password: autoPassword,
         };
       }
 
       onSubmit(studentPayload);
       if (!initialData) {
-        setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '' });
+        setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
       }
     }
   };
@@ -108,6 +150,8 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     }
   };
 
+  const availableSemesters = formData.module ? (SEMESTRES_POR_MODULO[formData.module] || []) : [];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Nombre Completo */}
@@ -117,7 +161,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         value={formData.name}
         onChange={handleChange}
         icon={User}
-        placeholder="Ej: Ana María López"
+        placeholder="Ej: Ana María Gómez"
         error={errors.name}
       />
 
@@ -142,28 +186,80 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         )}
       </FormField>
 
-      {/* Instrumento */}
+      {/* Instrumento (Select Obligatorio del Pénsum Categorizado) */}
       <FormField
-        label="Cátedra / Instrumento"
+        label="Instrumento (Pénsum Oficial)"
         name="instrument"
+        type="select"
         value={formData.instrument}
         onChange={handleChange}
         icon={Music}
-        placeholder="Ej: Piano, Violín, Guitarra"
         error={errors.instrument}
+        options={[
+          { value: '', label: 'Seleccionar instrumento del pénsum...', disabled: true },
+          ...INSTRUMENTOS_CATEGORIZADOS.map(cat => ({
+            isGroup: true,
+            label: cat.categoria,
+            options: cat.opciones.map(inst => ({ value: inst, label: inst }))
+          }))
+        ]}
       />
 
-      {/* Correo Electrónico */}
-      <FormField
-        label="Correo Electrónico"
-        name="email"
-        type="email"
-        value={formData.email}
-        onChange={handleChange}
-        icon={Mail}
-        placeholder="estudiante@rubato.org"
-        error={errors.email}
-      />
+      {/* Correo Electrónico y Número de Celular */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Correo Electrónico"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          icon={Mail}
+          placeholder="estudiante@rubato.org"
+          error={errors.email}
+        />
+
+        <FormField
+          label="Número de Celular"
+          name="phone"
+          type="tel"
+          value={formData.phone}
+          onChange={handleChange}
+          icon={Phone}
+          placeholder="Ej: 3001234567"
+          error={errors.phone}
+        />
+      </div>
+
+      {/* Módulo y Semestre */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Módulo"
+          name="module"
+          type="select"
+          value={formData.module}
+          onChange={handleModuleChange}
+          icon={Layers}
+          error={errors.module}
+          options={[
+            { value: '', label: 'Seleccionar Módulo...', disabled: true },
+            ...MODULOS_OFI.map(m => ({ value: m, label: m }))
+          ]}
+        />
+
+        <FormField
+          label="Semestre"
+          name="semester"
+          type="select"
+          value={formData.semester}
+          onChange={handleChange}
+          icon={BookOpen}
+          error={errors.semester}
+          options={[
+            { value: '', label: formData.module ? 'Seleccionar Semestre...' : 'Primero elija un módulo', disabled: true },
+            ...availableSemesters.map(s => ({ value: s, label: s }))
+          ]}
+        />
+      </div>
 
       {/* Botones de acción */}
       <FormActions
@@ -174,3 +270,5 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     </form>
   );
 }
+
+
