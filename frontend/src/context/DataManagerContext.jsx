@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { normalizeText } from '../utils/teacherUtils';
+import * as authApi from '../api/authApi';
+import * as classApi from '../api/classApi';
 
 const DataManagerContext = createContext(null);
 
 const getFullName = (item) => `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
-
-async function apiFetch(url, opts = {}) {
-  const res = await fetch(url, { credentials: 'include', ...opts });
-  if (!res.ok) throw new Error('Error de API');
-  return res.json();
-}
 
 const toMinutes = (time) => {
   if (!time) return null;
@@ -61,10 +57,10 @@ export function DataManagerProvider({ children }) {
   const fetchAll = async () => {
     try {
       const [classesRes, studentsRes, teachersRes, adminsRes] = await Promise.all([
-        apiFetch('/api/classes'),
-        apiFetch('/api/auth/users?role=ESTUDIANTE'),
-        apiFetch('/api/auth/users?role=DOCENTE'),
-        apiFetch('/api/auth/users?role=ADMIN')
+        classApi.getClasses(),
+        authApi.getUsersByRole('ESTUDIANTE'),
+        authApi.getUsersByRole('DOCENTE'),
+        authApi.getUsersByRole('ADMIN')
       ]);
       setClasses((classesRes.classes || []).map(mapClass));
       setStudents((studentsRes.users || []).map(mapUser));
@@ -87,121 +83,159 @@ export function DataManagerProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const addStudent = (student) => {
-    const newStudent = { ...student, id: Date.now() };
-    setStudents((prev) => [...prev, newStudent]);
-    return newStudent;
+  const addStudent = async (studentData) => {
+    const result = await authApi.registerUser({
+      nombre: studentData.nombre,
+      apellido: studentData.apellidos,
+      email: studentData.email,
+      role: 'ESTUDIANTE',
+      username: studentData.credentials?.usuario,
+      password: studentData.credentials?.password
+    });
+    await fetchAll();
+    return result;
   };
 
-  const updateStudent = (id, updatedStudent) => {
-    setStudents((prev) => prev.map((s) => s.id === id ? { ...s, ...updatedStudent, id } : s));
+  const updateStudent = async (id, studentData) => {
+    const result = await authApi.updateUser(id, {
+      nombre: studentData.nombre,
+      apellido: studentData.apellidos,
+      email: studentData.email,
+      role: 'ESTUDIANTE'
+    });
+    await fetchAll();
+    return result;
   };
 
-  const deleteStudent = (id) => {
-    const numericId = Number(id);
-    setStudents((prev) => prev.filter((s) => s.id !== numericId));
+  const deleteStudent = async (id) => {
+    const result = await authApi.deleteUser(id);
+    await fetchAll();
+    return result;
   };
 
-  const addTeacher = (teacher) => {
-    const newTeacher = { ...teacher, id: Date.now() };
-    setTeachers((prev) => [...prev, newTeacher]);
-    return newTeacher;
+  const addTeacher = async (teacherData) => {
+    const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+    const result = await authApi.registerUser({
+      nombre: teacherData.nombre,
+      apellido: teacherData.apellidos,
+      email: teacherData.email,
+      role: 'DOCENTE',
+      password: simplePwd,
+      especialidad: teacherData.specialty
+    });
+    await fetchAll();
+    return result;
   };
 
-  const updateTeacher = (id, updatedTeacher) => {
-    setTeachers((prev) => prev.map((t) => t.id === id ? { ...updatedTeacher, id } : t));
+  const updateTeacher = async (id, updatedTeacher) => {
+    const result = await authApi.updateUser(id, {
+      nombre: updatedTeacher.nombre,
+      apellido: updatedTeacher.apellidos,
+      email: updatedTeacher.email,
+      role: 'DOCENTE',
+      especialidad: updatedTeacher.specialty
+    });
+    await fetchAll();
+    return result;
   };
 
-  const deleteTeacher = (id) => {
-    setTeachers((prev) => prev.filter((t) => t.id !== id));
+  const deleteTeacher = async (id) => {
+    const result = await authApi.deleteUser(id);
+    await fetchAll();
+    return result;
   };
 
-  const addAdmin = (admin) => {
-    const newAdmin = { ...admin, id: Date.now(), role: 'SuperAdmin' };
-    setAdmins((prev) => [...prev, newAdmin]);
-    return newAdmin;
+  const addAdmin = async (adminData) => {
+    const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+    const result = await authApi.registerUser({
+      nombre: adminData.nombre,
+      apellido: adminData.apellidos,
+      email: adminData.email,
+      role: 'ADMIN',
+      password: simplePwd
+    });
+    await fetchAll();
+    return result;
   };
 
-  const updateAdmin = (id, updatedAdmin) => {
-    const newAdminObj = { ...updatedAdmin, id, role: 'SuperAdmin' };
-    setAdmins((prev) => prev.map((a) => a.id === id ? newAdminObj : a));
-    if (currentAdmin && currentAdmin.id === id) {
-      setCurrentAdminState(newAdminObj);
-    }
+  const updateAdmin = async (id, updatedAdmin) => {
+    const result = await authApi.updateUser(id, {
+      nombre: updatedAdmin.nombre,
+      apellido: updatedAdmin.apellidos,
+      email: updatedAdmin.email,
+      role: 'ADMIN'
+    });
+    await fetchAll();
+    return result;
   };
 
-  const deleteAdmin = (id) => {
-    setAdmins((prev) => prev.filter((a) => a.id !== id));
-    if (currentAdmin && currentAdmin.id === id) {
-      setCurrentAdminState(null);
-    }
+  const deleteAdmin = async (id) => {
+    const result = await authApi.deleteUser(id);
+    await fetchAll();
+    return result;
   };
 
   const setCurrentAdmin = (adminObj) => {
     setCurrentAdminState({ ...adminObj, role: 'SuperAdmin' });
   };
 
-  const addClass = (classData) => {
-    const conflictCheck = checkClassConflict(classData);
-    if (conflictCheck) {
-      return { ok: false, conflict: conflictCheck.conflict, message: conflictCheck.message };
-    }
+  const addClass = async (classData) => {
+    const studentDbIds = (classData.studentIds || []).map(id => {
+      const found = students.find(s => s.id === id);
+      return found ? (found.dbId || found.id) : id;
+    }).filter(Boolean);
 
-    const newClass = {
-      ...classData,
-      id: Date.now(),
-    };
-    setClasses((prev) => [...prev, newClass]);
-    return { ok: true, newClass };
+    const result = await classApi.createClass({
+      asignatura: classData.subject,
+      modulo: classData.module,
+      semestre: classData.semester,
+      day: classData.day,
+      startTime: classData.startTime,
+      endTime: classData.endTime,
+      horario: classData.horario,
+      teacherName: classData.teacherName,
+      docente_id: classData.teacherId,
+      studentNames: classData.studentNames,
+      studentIds: studentDbIds
+    });
+    await fetchAll();
+    return result;
   };
 
-  const updateClass = (id, updatedClass) => {
-    const conflictCheck = checkClassConflict(updatedClass, id);
-    if (conflictCheck) {
-      return { ok: false, conflict: conflictCheck.conflict, message: conflictCheck.message };
-    }
-    setClasses((prev) => prev.map((c) => c.id === id ? { ...updatedClass, id } : c));
-    return { ok: true, newClass: { ...updatedClass, id } };
+  const updateClass = async (id, updatedClass) => {
+    const result = await classApi.updateClass(id, {
+      asignatura: updatedClass.subject,
+      modulo: updatedClass.module,
+      semestre: updatedClass.semester,
+      day: updatedClass.day,
+      startTime: updatedClass.startTime,
+      endTime: updatedClass.endTime,
+      horario: updatedClass.horario,
+      teacherName: updatedClass.teacherName,
+      docente_id: updatedClass.teacherId
+    });
+    await fetchAll();
+    return result;
   };
 
-  const deleteClass = (id) => {
-    setClasses((prev) => prev.filter((c) => c.id !== id));
+  const deleteClass = async (id) => {
+    const result = await classApi.deleteClass(id);
+    await fetchAll();
+    return result;
   };
 
-  const removeStudentFromClass = (classId, studentId, studentName = '') => {
+  const removeStudentFromClass = async (classId, studentId, studentName = '') => {
     const numericId = Number(studentId);
     const studentRef = students.find((s) => s.id === numericId);
-    const studentFullName = studentRef ? getFullName(studentRef) : studentName;
+    const dbId = studentRef ? (studentRef.dbId || studentRef.id) : numericId;
+    
+    const cls = classes.find(c => c.id === classId);
+    const classDbId = cls ? (cls.dbId || cls.id) : classId;
 
-    setClasses((prev) => {
-      const cls = prev.find((c) => c.id === classId);
-      if (!cls) return prev;
-
-      const ids = cls.studentIds || [];
-      const names = cls.studentNames || [];
-
-      const matches = (id, name) =>
-        (ids.length > 0 && id === numericId) ||
-        (studentFullName && normalizeText(name) === normalizeText(studentFullName));
-
-      const newStudentNames = names.filter((name, i) => !matches(ids[i], name));
-      const newStudentIds = ids.filter((id, i) => !matches(id, names[i] || ''));
-
-      if (newStudentNames.length === 0) {
-        return prev.map((c) => c.id === classId
-          ? { ...c, studentNames: [], studentIds: [], studentName: '', studentId: undefined }
-          : c);
-      }
-
-      return prev.map((c) => c.id === classId ? {
-        ...c,
-        studentNames: newStudentNames,
-        studentIds: newStudentIds,
-        studentName: newStudentNames[0] || c.studentName,
-        studentId: c.studentId === numericId ? (newStudentIds[0] || c.studentId) : c.studentId,
-      } : c);
-    });
-
+    if (classDbId && dbId) {
+      await classApi.removeStudentFromClass(classDbId, dbId);
+    }
+    await fetchAll();
     return { removed: true };
   };
 

@@ -13,7 +13,7 @@ import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
 import { getLastName } from '../../utils/teacherUtils';
-import { removeStudentFromClass as apiRemoveStudentFromClass, createClass as apiCreateClass, updateClass as apiUpdateClass, deleteClass as apiDeleteClass } from '../../api/classApi';
+import * as authApi from '../../api/authApi';
 import { Shield, UserCheck, Copy, Check, X, Pencil, Sparkles, Eye, EyeOff, BookOpen, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const getFullName = (item) => {
@@ -76,89 +76,26 @@ export default function AdminDashboard() {
     refresh();
   }, []);
 
-  const registerBackendUser = async ({ nombre, apellidos, email, role, username, password, especialidad }) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre,
-        apellido: apellidos,
-        email,
-        role,
-        username: username || undefined,
-        password: password || undefined,
-        especialidad: especialidad || undefined
-      })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al registrar el usuario en la base de datos.');
-    }
-    return data;
-  };
-
-  const updateBackendUser = async (dbId, { nombre, apellidos, email, role, especialidad }) => {
-    const response = await fetch(`/api/auth/user/${dbId}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, apellido: apellidos, email, role, especialidad })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al actualizar el usuario en la base de datos.');
-    }
-    return data;
-  };
-
-  const deleteBackendUser = async (dbId) => {
-    const response = await fetch(`/api/auth/user/${dbId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data.error || 'Error al eliminar el usuario de la base de datos.');
-    }
-    return data;
-  };
-
   const handleStudentSubmit = async (data) => {
     if (editingItem) {
-      if (editingItem.dbId) {
-        try {
-          await updateBackendUser(editingItem.dbId, {
-            nombre: data.nombre,
-            apellidos: data.apellidos,
-            email: data.email,
-            role: 'ESTUDIANTE'
-          });
-        } catch (err) {
-          addToast(err.message, 'error');
-          return;
-        }
+      try {
+        await updateStudent(editingItem.id, data);
+        addToast(`Estudiante "${getFullName(data)}" actualizado correctamente`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+        return;
       }
-      updateStudent(editingItem.id, data);
-      addToast(`Estudiante "${getFullName(data)}" actualizado correctamente`, 'success');
     } else {
       try {
-        const result = await registerBackendUser({
-          nombre: data.nombre,
-          apellidos: data.apellidos,
-          email: data.email,
-          role: 'ESTUDIANTE',
-          username: data.credentials?.usuario,
-          password: data.credentials?.password
-        });
-        addStudent({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        const result = await addStudent(data);
         addToast(`Estudiante "${getFullName(data)}" registrado correctamente`, 'success');
-        setGeneratedCredentialsModal({
-          studentName: getFullName(data),
-          usuario: result.data.credentials.username,
-          password: result.data.credentials.password,
-        });
+        if (result && result.data && result.data.credentials) {
+          setGeneratedCredentialsModal({
+            studentName: getFullName(data),
+            usuario: result.data.credentials.username,
+            password: result.data.credentials.password,
+          });
+        }
       } catch (err) {
         addToast(err.message, 'error');
       }
@@ -168,42 +105,26 @@ export default function AdminDashboard() {
 
   const handleTeacherSubmit = async (data) => {
     if (editingItem) {
-      if (editingItem.dbId) {
-        try {
-          await updateBackendUser(editingItem.dbId, {
-            nombre: data.nombre,
-            apellidos: data.apellidos,
-            email: data.email,
-            role: 'DOCENTE',
-            especialidad: data.specialty
-          });
-        } catch (err) {
-          addToast(err.message, 'error');
-          return;
-        }
+      try {
+        await updateTeacher(editingItem.id, data);
+        addToast(`Docente "${getFullName(data)}" actualizado correctamente`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+        return;
       }
-      updateTeacher(editingItem.id, data);
-      addToast(`Docente "${getFullName(data)}" actualizado correctamente`, 'success');
     } else {
       try {
-        const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
-        const result = await registerBackendUser({
-          nombre: data.nombre,
-          apellidos: data.apellidos,
-          email: data.email,
-          role: 'DOCENTE',
-          password: simplePwd,
-          especialidad: data.specialty
-        });
-        addTeacher({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        const result = await addTeacher(data);
         addToast(`Docente "${getFullName(data)}" registrado correctamente`, 'success');
-        setGeneratedCredentialsModal({
-          studentName: getFullName(data),
-          usuario: result.data.credentials.username,
-          password: result.data.credentials.password,
-          title: 'Credenciales Generadas',
-          subtitle: 'Acceso para DOCENTE'
-        });
+        if (result && result.data && result.data.credentials) {
+          setGeneratedCredentialsModal({
+            studentName: getFullName(data),
+            usuario: result.data.credentials.username,
+            password: result.data.credentials.password,
+            title: 'Credenciales Generadas',
+            subtitle: 'Acceso para DOCENTE'
+          });
+        }
       } catch (err) {
         addToast(err.message, 'error');
       }
@@ -213,40 +134,26 @@ export default function AdminDashboard() {
 
   const handleAdminSubmit = async (data) => {
     if (editingItem) {
-      if (editingItem.dbId) {
-        try {
-          await updateBackendUser(editingItem.dbId, {
-            nombre: data.nombre,
-            apellidos: data.apellidos,
-            email: data.email,
-            role: 'ADMIN'
-          });
-        } catch (err) {
-          addToast(err.message, 'error');
-          return;
-        }
+      try {
+        await updateAdmin(editingItem.id, data);
+        addToast(`Administrador "${getFullName(data)}" actualizado correctamente`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+        return;
       }
-      updateAdmin(editingItem.id, data);
-      addToast(`Administrador "${getFullName(data)}" actualizado correctamente`, 'success');
     } else {
       try {
-        const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
-        const result = await registerBackendUser({
-          nombre: data.nombre,
-          apellidos: data.apellidos,
-          email: data.email,
-          role: 'ADMIN',
-          password: simplePwd
-        });
-        addAdmin({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        const result = await addAdmin(data);
         addToast(`Administrador (SuperAdmin) "${getFullName(data)}" registrado correctamente`, 'success');
-        setGeneratedCredentialsModal({
-          studentName: getFullName(data),
-          usuario: result.data.credentials.username,
-          password: result.data.credentials.password,
-          title: 'Credenciales Generadas',
-          subtitle: 'Acceso para ADMIN'
-        });
+        if (result && result.data && result.data.credentials) {
+          setGeneratedCredentialsModal({
+            studentName: getFullName(data),
+            usuario: result.data.credentials.username,
+            password: result.data.credentials.password,
+            title: 'Credenciales Generadas',
+            subtitle: 'Acceso para ADMIN'
+          });
+        }
       } catch (err) {
         addToast(err.message, 'error');
       }
@@ -263,50 +170,19 @@ export default function AdminDashboard() {
 
     if (editingItem) {
       try {
-        if (editingItem.dbId) {
-          await apiUpdateClass(editingItem.dbId, {
-            asignatura: classData.subject,
-            modulo: classData.module,
-            semestre: classData.semester,
-            day: classData.day,
-            startTime: classData.startTime,
-            endTime: classData.endTime,
-            horario: classData.horario,
-            teacherName: classData.teacherName,
-            docente_id: classData.teacherId
-          });
-        }
-        updateClass(editingItem.id, classData);
+        await updateClass(editingItem.id, classData);
         addToast(`Clase de "${classData.subject}" actualizada correctamente`, 'success');
       } catch (err) {
         console.error('Error al actualizar clase en backend:', err);
         addToast(`Error al actualizar: ${err.message}`, 'error');
-        return;
       }
     } else {
       try {
-        const enrolledStudents = students.filter(s => (classData.studentIds || []).includes(s.id));
-        const studentDbIds = enrolledStudents.map(s => s.dbId).filter(Boolean);
-        const result = await apiCreateClass({
-          asignatura: classData.subject,
-          modulo: classData.module,
-          semestre: classData.semester,
-          day: classData.day,
-          startTime: classData.startTime,
-          endTime: classData.endTime,
-          horario: classData.horario,
-          teacherName: classData.teacherName,
-          docente_id: classData.teacherId,
-          studentNames: classData.studentNames,
-          studentIds: studentDbIds
-        });
-        const dbId = result.newClass?.id;
-        addClass(dbId ? { ...classData, dbId } : classData);
+        await addClass(classData);
         addToast(`Clase de "${classData.subject}" creada y programada correctamente`, 'success');
       } catch (err) {
         console.error('Error al crear clase en backend:', err);
-        addClass(classData);
-        addToast(`Clase creada localmente: ${err.message}`, 'warning');
+        addToast(`Error al crear: ${err.message}`, 'error');
       }
     }
     setEditingItem(null);
@@ -332,35 +208,23 @@ export default function AdminDashboard() {
     const { item, type } = confirmDialog;
     if (!item) return;
 
-    if (item.dbId && type !== 'student' && type !== 'teacher' && type !== 'admin') {
-      try {
-        await apiDeleteClass(item.dbId);
-      } catch (err) {
-        addToast(`Error al eliminar clase: ${err.message}`, 'error');
-        return;
-      }
-    } else if (item.dbId) {
-      try {
-        await deleteBackendUser(item.dbId);
-      } catch (err) {
-        addToast(err.message, 'error');
-        return;
-      }
-    }
-
     const itemName = getFullName(item);
-    if (type === 'student') {
-      deleteStudent(item.id);
-      addToast(`Estudiante "${itemName}" eliminado`, 'warning');
-    } else if (type === 'teacher') {
-      deleteTeacher(item.id);
-      addToast(`Docente "${itemName}" eliminado`, 'warning');
-    } else if (type === 'admin') {
-      deleteAdmin(item.id);
-      addToast(`Administrador "${itemName}" eliminado`, 'warning');
-    } else if (type === 'class') {
-      deleteClass(item.id);
-      addToast(`Clase de "${item.subject}" eliminada`, 'warning');
+    try {
+      if (type === 'student') {
+        await deleteStudent(item.id);
+        addToast(`Estudiante "${itemName}" eliminado`, 'warning');
+      } else if (type === 'teacher') {
+        await deleteTeacher(item.id);
+        addToast(`Docente "${itemName}" eliminado`, 'warning');
+      } else if (type === 'admin') {
+        await deleteAdmin(item.id);
+        addToast(`Administrador "${itemName}" eliminado`, 'warning');
+      } else if (type === 'class') {
+        await deleteClass(item.id);
+        addToast(`Clase de "${item.subject}" eliminada`, 'warning');
+      }
+    } catch (err) {
+      addToast(`Error al eliminar: ${err.message}`, 'error');
     }
     setConfirmDialog({ isOpen: false, item: null, type: null });
   };
@@ -391,19 +255,14 @@ export default function AdminDashboard() {
   const confirmRemoveStudentFromClass = async () => {
     if (!removeStudentDialog) return;
     const { classId, student } = removeStudentDialog;
-    const dbId = student.dbId;
-    const claseDbId = classes.find(c => c.id === classId)?.dbId;
     const studentName = getFullName(student);
 
     try {
-      if (claseDbId && dbId) {
-        await apiRemoveStudentFromClass(claseDbId, dbId);
-      }
+      await removeStudentFromClass(classId, student.id, studentName);
+      addToast(`"${studentName}" desvinculado de la clase`, 'success');
     } catch (err) {
       addToast(err.message, 'error');
     }
-    removeStudentFromClass(classId, student.id, studentName);
-    addToast(`"${studentName}" desvinculado de la clase`, 'success');
     setRemoveStudentDialog(null);
   };
 
@@ -413,16 +272,10 @@ export default function AdminDashboard() {
 
     if (!pass) {
       try {
-        const response = await fetch(`/api/auth/credentials/${item.dbId || item.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          pass = data.password;
-        } else {
-          addToast('No se pudieron obtener las credenciales del servidor', 'error');
-          return;
-        }
-      } catch {
-        addToast('Error al conectar con el servidor para obtener credenciales', 'error');
+        const data = await authApi.getCredentials(item.dbId || item.id);
+        pass = data.password;
+      } catch (err) {
+        addToast('No se pudieron obtener las credenciales del servidor', 'error');
         return;
       }
     }
