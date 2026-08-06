@@ -5,8 +5,8 @@ export const normalizeText = (str = '') =>
 
 export const getFullName = (item) => {
   if (!item) return '';
-  if (item.nombre || item.apellidos) {
-    return `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
+  if (item.nombre || item.apellido) {
+    return `${(item.nombre || '')} ${(item.apellido || '')}`.trim();
   }
   if (item.name) return item.name.trim();
   return '';

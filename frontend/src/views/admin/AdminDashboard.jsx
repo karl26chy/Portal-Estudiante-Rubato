@@ -12,18 +12,9 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
-import { getLastName } from '../../utils/teacherUtils';
+import { getLastName, getFullName } from '../../utils/teacherUtils';
 import * as authApi from '../../api/authApi';
 import { Shield, UserCheck, Copy, Check, X, Pencil, Sparkles, Eye, EyeOff, BookOpen, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-
-const getFullName = (item) => {
-  if (!item) return '';
-  if (item.nombre || item.apellidos) {
-    return `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
-  }
-  if (item.name) return item.name.trim();
-  return '';
-};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('students');
@@ -547,7 +538,7 @@ export default function AdminDashboard() {
                         const enrolledStudents = (cls.studentNames || [])
                           .map(name => {
                             const found = students.find(s => getFullName(s) === name);
-                            return found || { nombre: name, apellidos: '' };
+                            return found || { nombre: name, apellido: '' };
                           })
                           .sort((a, b) => {
                             const aLast = getLastName(getFullName(a)).toLowerCase();

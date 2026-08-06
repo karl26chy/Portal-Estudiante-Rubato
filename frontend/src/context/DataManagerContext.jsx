@@ -5,7 +5,7 @@ import * as classApi from '../api/classApi';
 
 const DataManagerContext = createContext(null);
 
-const getFullName = (item) => `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
+const getFullName = (item) => `${(item.nombre || '')} ${(item.apellido || '')}`.trim();
 
 const toMinutes = (time) => {
   if (!time) return null;
@@ -17,11 +17,13 @@ const toMinutes = (time) => {
 const mapUser = (u) => ({
   id: u.id,
   nombre: u.nombre,
+  apellido: u.apellido,
   apellidos: u.apellido,
   email: u.email,
   username: u.username,
   role: u.role,
   especialidad: u.especialidad || '',
+  specialty: u.especialidad || '',
   dbId: u.id
 });
 
@@ -86,7 +88,7 @@ export function DataManagerProvider({ children }) {
   const addStudent = async (studentData) => {
     const result = await authApi.registerUser({
       nombre: studentData.nombre,
-      apellido: studentData.apellidos,
+      apellido: studentData.apellido,
       email: studentData.email,
       role: 'ESTUDIANTE',
       username: studentData.credentials?.usuario,
@@ -99,7 +101,7 @@ export function DataManagerProvider({ children }) {
   const updateStudent = async (id, studentData) => {
     const result = await authApi.updateUser(id, {
       nombre: studentData.nombre,
-      apellido: studentData.apellidos,
+      apellido: studentData.apellido,
       email: studentData.email,
       role: 'ESTUDIANTE'
     });
@@ -117,7 +119,7 @@ export function DataManagerProvider({ children }) {
     const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
     const result = await authApi.registerUser({
       nombre: teacherData.nombre,
-      apellido: teacherData.apellidos,
+      apellido: teacherData.apellido,
       email: teacherData.email,
       role: 'DOCENTE',
       password: simplePwd,
@@ -130,7 +132,7 @@ export function DataManagerProvider({ children }) {
   const updateTeacher = async (id, updatedTeacher) => {
     const result = await authApi.updateUser(id, {
       nombre: updatedTeacher.nombre,
-      apellido: updatedTeacher.apellidos,
+      apellido: updatedTeacher.apellido,
       email: updatedTeacher.email,
       role: 'DOCENTE',
       especialidad: updatedTeacher.specialty
@@ -149,7 +151,7 @@ export function DataManagerProvider({ children }) {
     const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
     const result = await authApi.registerUser({
       nombre: adminData.nombre,
-      apellido: adminData.apellidos,
+      apellido: adminData.apellido,
       email: adminData.email,
       role: 'ADMIN',
       password: simplePwd
@@ -161,7 +163,7 @@ export function DataManagerProvider({ children }) {
   const updateAdmin = async (id, updatedAdmin) => {
     const result = await authApi.updateUser(id, {
       nombre: updatedAdmin.nombre,
-      apellido: updatedAdmin.apellidos,
+      apellido: updatedAdmin.apellido,
       email: updatedAdmin.email,
       role: 'ADMIN'
     });

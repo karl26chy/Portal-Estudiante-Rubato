@@ -4,22 +4,22 @@ import FormField from './FormField';
 import FormActions from './FormActions';
 
 function parseNameFromLegacy(initialData) {
-  if (initialData.nombre && initialData.apellidos) {
-    return { nombre: initialData.nombre, apellidos: initialData.apellidos };
+  if (initialData.nombre && (initialData.apellido || initialData.apellidos)) {
+    return { nombre: initialData.nombre, apellido: initialData.apellido || initialData.apellidos };
   }
   if (initialData.name) {
     const tokens = initialData.name.trim().split(/\s+/);
-    const apellidos = tokens.length > 1 ? tokens[tokens.length - 1] : '';
+    const apellido = tokens.length > 1 ? tokens[tokens.length - 1] : '';
     const nombre = tokens.length > 1 ? tokens.slice(0, -1).join(' ') : tokens[0] || '';
-    return { nombre, apellidos };
+    return { nombre, apellido };
   }
-  return { nombre: '', apellidos: '' };
+  return { nombre: '', apellido: '' };
 }
 
 export default function TeacherForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     nombre: '',
-    apellidos: '',
+    apellido: '',
     specialty: '',
     email: '',
   });
@@ -27,15 +27,15 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
-      const { nombre, apellidos } = parseNameFromLegacy(initialData);
+      const { nombre, apellido } = parseNameFromLegacy(initialData);
       setFormData({
         nombre,
-        apellidos,
+        apellido,
         specialty: initialData.specialty || initialData.especialidad || '',
         email: initialData.email || '',
       });
     } else {
-      setFormData({ nombre: '', apellidos: '', specialty: '', email: '' });
+      setFormData({ nombre: '', apellido: '', specialty: '', email: '' });
     }
   }, [initialData]);
 
@@ -44,8 +44,8 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
     if (!formData.nombre.trim() || formData.nombre.length < 2) {
       newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
     }
-    if (!formData.apellidos.trim() || formData.apellidos.length < 2) {
-      newErrors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
+    if (!formData.apellido.trim() || formData.apellido.length < 2) {
+      newErrors.apellido = 'El apellido debe tener al menos 2 caracteres';
     }
     if (!formData.specialty.trim()) {
       newErrors.specialty = 'La especialidad o cátedra es requerida';
@@ -63,7 +63,7 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
     if (validate()) {
       onSubmit(formData);
       if (!initialData) {
-        setFormData({ nombre: '', apellidos: '', specialty: '', email: '' });
+        setFormData({ nombre: '', apellido: '', specialty: '', email: '' });
       }
     }
   };
@@ -90,12 +90,12 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
         />
         <FormField
           label="Apellidos"
-          name="apellidos"
-          value={formData.apellidos}
+          name="apellido"
+          value={formData.apellido}
           onChange={handleChange}
           icon={User}
           placeholder="Ej: Silva Gómez"
-          error={errors.apellidos}
+          error={errors.apellido}
         />
       </div>
 

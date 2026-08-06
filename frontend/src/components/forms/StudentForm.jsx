@@ -5,22 +5,22 @@ import FormActions from './FormActions';
 import { INSTRUMENTOS_OFI, INSTRUMENTOS_CATEGORIZADOS, MODULOS_OFI, SEMESTRES_POR_MODULO } from '../../constants/pensumData';
 
 function parseNameFromLegacy(initialData) {
-  if (initialData.nombre && initialData.apellidos) {
-    return { nombre: initialData.nombre, apellidos: initialData.apellidos };
+  if (initialData.nombre && (initialData.apellido || initialData.apellidos)) {
+    return { nombre: initialData.nombre, apellido: initialData.apellido || initialData.apellidos };
   }
   if (initialData.name) {
     const tokens = initialData.name.trim().split(/\s+/);
-    const apellidos = tokens.length > 1 ? tokens[tokens.length - 1] : '';
+    const apellido = tokens.length > 1 ? tokens[tokens.length - 1] : '';
     const nombre = tokens.length > 1 ? tokens.slice(0, -1).join(' ') : tokens[0] || '';
-    return { nombre, apellidos };
+    return { nombre, apellido };
   }
-  return { nombre: '', apellidos: '' };
+  return { nombre: '', apellido: '' };
 }
 
 export default function StudentForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     nombre: '',
-    apellidos: '',
+    apellido: '',
     birthdate: '',
     age: '',
     instrument: '',
@@ -45,11 +45,11 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
-      const { nombre, apellidos } = parseNameFromLegacy(initialData);
+      const { nombre, apellido } = parseNameFromLegacy(initialData);
       const computedAge = initialData.birthdate ? calculateAge(initialData.birthdate) : (initialData.age || '');
       setFormData({
         nombre,
-        apellidos,
+        apellido,
         birthdate: initialData.birthdate || '',
         age: computedAge,
         instrument: initialData.instrument || '',
@@ -59,7 +59,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         semester: initialData.semester || '',
       });
     } else {
-      setFormData({ nombre: '', apellidos: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+      setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
     }
   }, [initialData]);
 
@@ -93,8 +93,8 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     if (!formData.nombre.trim() || formData.nombre.length < 2) {
       newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
     }
-    if (!formData.apellidos.trim() || formData.apellidos.length < 2) {
-      newErrors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
+    if (!formData.apellido.trim() || formData.apellido.length < 2) {
+      newErrors.apellido = 'El apellido debe tener al menos 2 caracteres';
     }
     if (!formData.birthdate) {
       newErrors.birthdate = 'La fecha de nacimiento es requerida';
@@ -153,7 +153,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
       onSubmit(studentPayload);
       if (!initialData) {
-        setFormData({ nombre: '', apellidos: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+        setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
       }
     }
   };
@@ -182,12 +182,12 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         />
         <FormField
           label="Apellidos"
-          name="apellidos"
-          value={formData.apellidos}
+          name="apellido"
+          value={formData.apellido}
           onChange={handleChange}
           icon={User}
           placeholder="Ej: Gómez López"
-          error={errors.apellidos}
+          error={errors.apellido}
         />
       </div>
 
