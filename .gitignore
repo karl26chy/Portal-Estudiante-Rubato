@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Variables de Entorno (¡NUNCA subir a Git!)
 .env
+.env.docker
 .env.local
 .env.development.local
 .env.production.local
