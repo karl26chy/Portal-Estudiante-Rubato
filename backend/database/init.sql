@@ -27,6 +27,25 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Asegurar que la columna especialidad existe en users (por si la tabla ya existía previamente)
+DROP PROCEDURE IF EXISTS AddEspecialidadColumn;
+DELIMITER //
+CREATE PROCEDURE AddEspecialidadColumn()
+BEGIN
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'especialidad'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `especialidad` VARCHAR(150) NULL AFTER `role`;
+  END IF;
+END //
+DELIMITER ;
+
+CALL AddEspecialidadColumn();
+DROP PROCEDURE IF EXISTS AddEspecialidadColumn;
+
 -- -----------------------------------------------------
 -- Table `classes`
 -- -----------------------------------------------------
