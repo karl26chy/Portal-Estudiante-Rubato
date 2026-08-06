@@ -90,6 +90,8 @@ async function registerUser(userData) {
   // Cifrado reversible para visualización de Admin (AES-256)
   const password_encrypted = cryptoHelper.encrypt(password);
 
+  const isStudent = normalizedRole === 'ESTUDIANTE';
+
   const newUser = {
     nombre,
     apellido,
@@ -97,6 +99,11 @@ async function registerUser(userData) {
     username,
     role: normalizedRole,
     especialidad: userData.especialidad || userData.specialty || null,
+    birthdate: isStudent ? (userData.birthdate || null) : null,
+    age: isStudent ? (userData.age !== undefined && userData.age !== null && userData.age !== '' ? userData.age : null) : null,
+    instrument: isStudent ? (userData.instrument || null) : null,
+    module: isStudent ? (userData.module || null) : null,
+    semester: isStudent ? (userData.semester || null) : null,
     password_hash,
     password_encrypted
   };

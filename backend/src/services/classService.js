@@ -136,8 +136,8 @@ async function updateClass(id, classData, user) {
     throw error;
   }
 
-  const updated = await classRepository.updateById(id, {
-    asignatura: classData.asignatura || cls.asignatura,
+  await classRepository.updateById(id, {
+    asignatura: classData.asignatura || classData.subject || cls.asignatura,
     modulo: classData.modulo || classData.module || cls.modulo,
     semestre: classData.semestre || classData.semester || cls.semestre,
     profesor_nombre: classData.teacherName || cls.profesor_nombre,
@@ -145,10 +145,15 @@ async function updateClass(id, classData, user) {
     horario: classData.horario || cls.horario,
     hora_inicio: classData.startTime || cls.hora_inicio,
     hora_fin: classData.endTime || cls.hora_fin,
-    aula: cls.aula
+    aula: cls.aula,
+    docente_id: classData.docente_id || classData.teacherId || cls.docente_id
   });
 
-  return updated;
+  if (Array.isArray(classData.studentIds)) {
+    await classRepository.setClassStudents(id, classData.studentIds);
+  }
+
+  return classRepository.findById(id);
 }
 
 async function deleteClass(id, user) {

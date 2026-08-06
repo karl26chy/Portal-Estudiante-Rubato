@@ -24,6 +24,11 @@ const mapUser = (u) => ({
   role: u.role,
   especialidad: u.especialidad || '',
   specialty: u.especialidad || '',
+  birthdate: u.birthdate || '',
+  age: u.age !== null && u.age !== undefined ? u.age : '',
+  instrument: u.instrument || '',
+  module: u.module || '',
+  semester: u.semester || '',
   dbId: u.id
 });
 
@@ -45,7 +50,9 @@ const mapClass = (c) => ({
   aula: c.aula,
   nota: c.nota,
   asistencia: c.asistencia,
-  docente_id: c.docente_id
+  docente_id: c.docente_id,
+  studentIds: Array.isArray(c.studentIds) ? c.studentIds : [],
+  studentNames: Array.isArray(c.studentNames) ? c.studentNames : []
 });
 
 export function DataManagerProvider({ children }) {
@@ -86,13 +93,19 @@ export function DataManagerProvider({ children }) {
   }, []);
 
   const addStudent = async (studentData) => {
+    const simplePwd = studentData.credentials?.password || `Rubato${Math.floor(100000 + Math.random() * 900000)}!`;
     const result = await authApi.registerUser({
       nombre: studentData.nombre,
       apellido: studentData.apellido,
       email: studentData.email,
       role: 'ESTUDIANTE',
       username: studentData.credentials?.usuario,
-      password: studentData.credentials?.password
+      password: simplePwd,
+      birthdate: studentData.birthdate,
+      age: studentData.age,
+      instrument: studentData.instrument,
+      module: studentData.module,
+      semester: studentData.semester
     });
     await fetchAll();
     return result;
@@ -103,7 +116,12 @@ export function DataManagerProvider({ children }) {
       nombre: studentData.nombre,
       apellido: studentData.apellido,
       email: studentData.email,
-      role: 'ESTUDIANTE'
+      role: 'ESTUDIANTE',
+      birthdate: studentData.birthdate,
+      age: studentData.age,
+      instrument: studentData.instrument,
+      module: studentData.module,
+      semester: studentData.semester
     });
     await fetchAll();
     return result;
@@ -116,7 +134,7 @@ export function DataManagerProvider({ children }) {
   };
 
   const addTeacher = async (teacherData) => {
-    const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+    const simplePwd = `Rubato${Math.floor(100000 + Math.random() * 900000)}!`;
     const result = await authApi.registerUser({
       nombre: teacherData.nombre,
       apellido: teacherData.apellido,
@@ -148,7 +166,7 @@ export function DataManagerProvider({ children }) {
   };
 
   const addAdmin = async (adminData) => {
-    const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+    const simplePwd = `Rubato${Math.floor(100000 + Math.random() * 900000)}!`;
     const result = await authApi.registerUser({
       nombre: adminData.nombre,
       apellido: adminData.apellido,
@@ -205,6 +223,11 @@ export function DataManagerProvider({ children }) {
   };
 
   const updateClass = async (id, updatedClass) => {
+    const studentDbIds = (updatedClass.studentIds || []).map(studentId => {
+      const found = students.find(s => s.id === studentId);
+      return found ? (found.dbId || found.id) : studentId;
+    }).filter(Boolean);
+
     const result = await classApi.updateClass(id, {
       asignatura: updatedClass.subject,
       modulo: updatedClass.module,
@@ -214,7 +237,9 @@ export function DataManagerProvider({ children }) {
       endTime: updatedClass.endTime,
       horario: updatedClass.horario,
       teacherName: updatedClass.teacherName,
-      docente_id: updatedClass.teacherId
+      docente_id: updatedClass.teacherId,
+      studentNames: updatedClass.studentNames,
+      studentIds: studentDbIds
     });
     await fetchAll();
     return result;

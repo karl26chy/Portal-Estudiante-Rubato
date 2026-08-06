@@ -46,24 +46,29 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
   useEffect(() => {
     if (initialData) {
       const teacher = teachers.find(t =>
+        t.id === initialData.docente_id ||
         normalizeText(getFullName(t)) === normalizeText(initialData.teacherName || initialData.profesor || initialData.profesora || initialData.director)
       );
       const names = (initialData.studentNames && initialData.studentNames.length > 0)
         ? initialData.studentNames
         : (initialData.studentName ? [initialData.studentName] : []);
-      const ids = names
+      const idsFromNames = names
         .map(name => {
           const found = students.find(s => normalizeText(getFullName(s)) === normalizeText(name));
           return found ? found.id : null;
         })
         .filter(id => id !== null);
       const fallbackIds = (initialData.studentId !== undefined && initialData.studentId !== null) ? [initialData.studentId] : [];
+      const initialStudentIds = (initialData.studentIds && initialData.studentIds.length > 0)
+        ? initialData.studentIds
+        : (idsFromNames.length > 0 ? idsFromNames : fallbackIds);
+
       setFormData({
         module: initialData.module || '',
         semester: initialData.semester || '',
         subject: initialData.subject || initialData.asignatura || '',
-        teacherId: teacher ? teacher.id : '',
-        selectedStudentIds: ids.length > 0 ? ids : fallbackIds,
+        teacherId: teacher ? teacher.id : (initialData.docente_id || ''),
+        selectedStudentIds: initialStudentIds,
         day: initialData.day || 'Lunes',
         startTime: initialData.startTime || '08:00',
         endTime: initialData.endTime || '10:00',
@@ -71,7 +76,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
     } else {
       setFormData({ module: '', semester: '', subject: '', teacherId: '', selectedStudentIds: [], day: 'Lunes', startTime: '08:00', endTime: '10:00' });
     }
-  }, [initialData]);
+  }, [initialData, students, teachers]);
 
   const handleModuleChange = (e) => {
     const selectedMod = e.target.value;
@@ -190,7 +195,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
   const availableSemesters = formData.module ? (SEMESTRES_POR_MODULO[formData.module] || []) : [];
   const availableSubjects = formData.module ? (ASIGNATURAS_POR_MODULO[formData.module] || []) : [];
   const filteredStudents = formData.module
-    ? students.filter(s => (s.module || 'Módulo 1') === formData.module)
+    ? students.filter(s => (s.module || 'Módulo 1') === formData.module || formData.selectedStudentIds.includes(s.id))
     : students;
 
   return (

@@ -10,10 +10,10 @@ async function findByUsernameOrEmail(identifier) {
 }
 
 async function createUser(userData) {
-  const { nombre, apellido, email, username, role, password_hash, password_encrypted, especialidad } = userData;
+  const { nombre, apellido, email, username, role, password_hash, password_encrypted, especialidad, birthdate, age, instrument, module, semester } = userData;
   const [result] = await pool.query(
-    'INSERT INTO users (nombre, apellido, email, username, role, especialidad, password_hash, password_encrypted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [nombre, apellido, email, username, role, especialidad || null, password_hash, password_encrypted]
+    'INSERT INTO users (nombre, apellido, email, username, role, especialidad, birthdate, age, instrument, module, semester, password_hash, password_encrypted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [nombre, apellido, email, username, role, especialidad || null, birthdate || null, age !== undefined && age !== null && age !== '' ? age : null, instrument || null, module || null, semester || null, password_hash, password_encrypted]
   );
   return result.insertId;
 }
@@ -28,7 +28,7 @@ async function getEncryptedPasswordById(id) {
 
 async function findAllByRole(role) {
   const [rows] = await pool.query(
-    'SELECT id, nombre, apellido, email, username, role, especialidad FROM users WHERE role = ? ORDER BY apellido ASC, nombre ASC',
+    'SELECT id, nombre, apellido, email, username, role, especialidad, birthdate, age, instrument, module, semester FROM users WHERE role = ? ORDER BY apellido ASC, nombre ASC',
     [role]
   );
   return rows;
@@ -44,6 +44,11 @@ async function updateUser(id, userData) {
   if (userData.username !== undefined) { fields.push('username = ?'); values.push(userData.username); }
   if (userData.role !== undefined) { fields.push('role = ?'); values.push(userData.role); }
   if (userData.especialidad !== undefined) { fields.push('especialidad = ?'); values.push(userData.especialidad); }
+  if (userData.birthdate !== undefined) { fields.push('birthdate = ?'); values.push(userData.birthdate || null); }
+  if (userData.age !== undefined) { fields.push('age = ?'); values.push(userData.age !== null && userData.age !== '' ? userData.age : null); }
+  if (userData.instrument !== undefined) { fields.push('instrument = ?'); values.push(userData.instrument || null); }
+  if (userData.module !== undefined) { fields.push('module = ?'); values.push(userData.module || null); }
+  if (userData.semester !== undefined) { fields.push('semester = ?'); values.push(userData.semester || null); }
 
   if (fields.length === 0) return false;
 

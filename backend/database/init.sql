@@ -22,15 +22,20 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username` VARCHAR(100) NOT NULL UNIQUE,
   `role` ENUM('ADMIN', 'DOCENTE', 'ESTUDIANTE') NOT NULL,
   `especialidad` VARCHAR(150) NULL,
+  `birthdate` DATE NULL,
+  `age` INT NULL,
+  `instrument` VARCHAR(100) NULL,
+  `module` VARCHAR(50) NULL,
+  `semester` VARCHAR(50) NULL,
   `password_hash` VARCHAR(255) NOT NULL,
   `password_encrypted` TEXT NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Asegurar que la columna especialidad existe en users (por si la tabla ya existía previamente)
-DROP PROCEDURE IF EXISTS AddEspecialidadColumn;
+-- Asegurar que las columnas de docente y estudiante existen en users (por si la tabla ya existía previamente)
+DROP PROCEDURE IF EXISTS AddStudentColumns;
 DELIMITER //
-CREATE PROCEDURE AddEspecialidadColumn()
+CREATE PROCEDURE AddStudentColumns()
 BEGIN
   IF NOT EXISTS (
     SELECT * FROM information_schema.columns 
@@ -40,11 +45,56 @@ BEGIN
   ) THEN
     ALTER TABLE `users` ADD COLUMN `especialidad` VARCHAR(150) NULL AFTER `role`;
   END IF;
+
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'birthdate'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `birthdate` DATE NULL AFTER `especialidad`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'age'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `age` INT NULL AFTER `birthdate`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'instrument'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `instrument` VARCHAR(100) NULL AFTER `age`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'module'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `module` VARCHAR(50) NULL AFTER `instrument`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema = DATABASE()
+      AND table_name = 'users' 
+      AND column_name = 'semester'
+  ) THEN
+    ALTER TABLE `users` ADD COLUMN `semester` VARCHAR(50) NULL AFTER `module`;
+  END IF;
 END //
 DELIMITER ;
 
-CALL AddEspecialidadColumn();
-DROP PROCEDURE IF EXISTS AddEspecialidadColumn;
+CALL AddStudentColumns();
+DROP PROCEDURE IF EXISTS AddStudentColumns;
 
 -- -----------------------------------------------------
 -- Table `classes`

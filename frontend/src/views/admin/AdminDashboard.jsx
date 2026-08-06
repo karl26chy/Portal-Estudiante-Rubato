@@ -223,7 +223,7 @@ export default function AdminDashboard() {
   const handleViewStudentClasses = (student) => {
     const studentName = getFullName(student);
     const studentClasses = classes.filter(c =>
-      (c.studentIds || []).includes(student.id) ||
+      (c.studentIds || []).some(id => Number(id) === Number(student.id)) ||
       (c.studentNames || []).includes(studentName)
     );
     setStudentClassesModal({ student, studentName, classes: studentClasses });
