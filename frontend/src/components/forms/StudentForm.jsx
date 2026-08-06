@@ -4,9 +4,23 @@ import FormField from './FormField';
 import FormActions from './FormActions';
 import { INSTRUMENTOS_OFI, INSTRUMENTOS_CATEGORIZADOS, MODULOS_OFI, SEMESTRES_POR_MODULO } from '../../constants/pensumData';
 
+function parseNameFromLegacy(initialData) {
+  if (initialData.nombre && initialData.apellidos) {
+    return { nombre: initialData.nombre, apellidos: initialData.apellidos };
+  }
+  if (initialData.name) {
+    const tokens = initialData.name.trim().split(/\s+/);
+    const apellidos = tokens.length > 1 ? tokens[tokens.length - 1] : '';
+    const nombre = tokens.length > 1 ? tokens.slice(0, -1).join(' ') : tokens[0] || '';
+    return { nombre, apellidos };
+  }
+  return { nombre: '', apellidos: '' };
+}
+
 export default function StudentForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    name: '',
+    nombre: '',
+    apellidos: '',
     birthdate: '',
     age: '',
     instrument: '',
@@ -17,7 +31,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
   });
   const [errors, setErrors] = useState({});
 
-  // Helper para calcular la edad exacta en tiempo real
   const calculateAge = (birthdateStr) => {
     if (!birthdateStr) return '';
     const birthDate = new Date(birthdateStr);
@@ -32,9 +45,11 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
+      const { nombre, apellidos } = parseNameFromLegacy(initialData);
       const computedAge = initialData.birthdate ? calculateAge(initialData.birthdate) : (initialData.age || '');
       setFormData({
-        name: initialData.name || '',
+        nombre,
+        apellidos,
         birthdate: initialData.birthdate || '',
         age: computedAge,
         instrument: initialData.instrument || '',
@@ -44,7 +59,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         semester: initialData.semester || '',
       });
     } else {
-      setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+      setFormData({ nombre: '', apellidos: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
     }
   }, [initialData]);
 
@@ -66,7 +81,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     setFormData(prev => ({
       ...prev,
       module: selectedMod,
-      semester: '' // reiniciar semestre si se cambia el módulo
+      semester: ''
     }));
     if (errors.module) {
       setErrors(prev => ({ ...prev, module: '', semester: '' }));
@@ -75,8 +90,11 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim() || formData.name.length < 3) {
-      newErrors.name = 'El nombre completo debe tener al menos 3 caracteres';
+    if (!formData.nombre.trim() || formData.nombre.length < 2) {
+      newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+    if (!formData.apellidos.trim() || formData.apellidos.length < 2) {
+      newErrors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
     }
     if (!formData.birthdate) {
       newErrors.birthdate = 'La fecha de nacimiento es requerida';
@@ -112,17 +130,15 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         age: Number(formData.age),
       };
 
-      // Generar credenciales SOLO al crear un estudiante nuevo.
-      // Formato usuario: primerNombre.rubato + número aleatorio (ej: carlos.rubato48) sin @
       if (!initialData) {
-        const firstName = formData.name
+        const firstName = formData.nombre
           .trim()
           .split(' ')[0]
           .toLowerCase()
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-z0-9]/g, '');
-        
+
         const randomNum = Math.floor(10 + Math.random() * 90);
         const username = `${firstName}.rubato${randomNum}`;
         const autoPassword = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
@@ -137,7 +153,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
       onSubmit(studentPayload);
       if (!initialData) {
-        setFormData({ name: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+        setFormData({ nombre: '', apellidos: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
       }
     }
   };
@@ -154,18 +170,27 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Nombre Completo */}
-      <FormField
-        label="Nombre Completo"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        icon={User}
-        placeholder="Ej: Ana María Gómez"
-        error={errors.name}
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Nombre(s)"
+          name="nombre"
+          value={formData.nombre}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Ana María"
+          error={errors.nombre}
+        />
+        <FormField
+          label="Apellidos"
+          name="apellidos"
+          value={formData.apellidos}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Gómez López"
+          error={errors.apellidos}
+        />
+      </div>
 
-      {/* Fecha de Nacimiento y Cálculo de Edad en Tiempo Real */}
       <FormField
         label="Fecha de Nacimiento"
         name="birthdate"
@@ -175,7 +200,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         icon={Calendar}
         error={errors.birthdate}
       >
-        {/* Indicador dinámico de edad calculada */}
         {formData.birthdate && formData.age !== '' && (
           <div className="mt-2 p-2 px-3 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-between text-xs text-[#6b0060] font-semibold">
             <span>Edad calculada automáticamente:</span>
@@ -186,7 +210,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         )}
       </FormField>
 
-      {/* Instrumento (Select Obligatorio del Pénsum Categorizado) */}
       <FormField
         label="Instrumento (Pénsum Oficial)"
         name="instrument"
@@ -205,7 +228,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         ]}
       />
 
-      {/* Correo Electrónico y Número de Celular */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Correo Electrónico"
@@ -230,7 +252,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         />
       </div>
 
-      {/* Módulo y Semestre */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Módulo"
@@ -261,7 +282,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         />
       </div>
 
-      {/* Botones de acción */}
       <FormActions
         submitLabel={initialData ? 'Actualizar Estudiante' : 'Registrar Estudiante'}
         onCancel={onCancel}
@@ -270,5 +290,3 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     </form>
   );
 }
-
-

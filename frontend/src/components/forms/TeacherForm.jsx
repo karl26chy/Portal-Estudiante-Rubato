@@ -3,9 +3,23 @@ import { User, Award, Mail } from 'lucide-react';
 import FormField from './FormField';
 import FormActions from './FormActions';
 
+function parseNameFromLegacy(initialData) {
+  if (initialData.nombre && initialData.apellidos) {
+    return { nombre: initialData.nombre, apellidos: initialData.apellidos };
+  }
+  if (initialData.name) {
+    const tokens = initialData.name.trim().split(/\s+/);
+    const apellidos = tokens.length > 1 ? tokens[tokens.length - 1] : '';
+    const nombre = tokens.length > 1 ? tokens.slice(0, -1).join(' ') : tokens[0] || '';
+    return { nombre, apellidos };
+  }
+  return { nombre: '', apellidos: '' };
+}
+
 export default function TeacherForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    name: '',
+    nombre: '',
+    apellidos: '',
     specialty: '',
     email: '',
   });
@@ -13,20 +27,25 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
+      const { nombre, apellidos } = parseNameFromLegacy(initialData);
       setFormData({
-        name: initialData.name || '',
+        nombre,
+        apellidos,
         specialty: initialData.specialty || initialData.especialidad || '',
         email: initialData.email || '',
       });
     } else {
-      setFormData({ name: '', specialty: '', email: '' });
+      setFormData({ nombre: '', apellidos: '', specialty: '', email: '' });
     }
   }, [initialData]);
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim() || formData.name.length < 3) {
-      newErrors.name = 'El nombre completo debe tener al menos 3 caracteres';
+    if (!formData.nombre.trim() || formData.nombre.length < 2) {
+      newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+    if (!formData.apellidos.trim() || formData.apellidos.length < 2) {
+      newErrors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
     }
     if (!formData.specialty.trim()) {
       newErrors.specialty = 'La especialidad o cátedra es requerida';
@@ -44,7 +63,7 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
     if (validate()) {
       onSubmit(formData);
       if (!initialData) {
-        setFormData({ name: '', specialty: '', email: '' });
+        setFormData({ nombre: '', apellidos: '', specialty: '', email: '' });
       }
     }
   };
@@ -59,15 +78,26 @@ export default function TeacherForm({ initialData, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
-      <FormField
-        label="Nombre Completo"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        icon={User}
-        placeholder="Ej: Maestro Carlos Silva"
-        error={errors.name}
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Nombre(s)"
+          name="nombre"
+          value={formData.nombre}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Carlos"
+          error={errors.nombre}
+        />
+        <FormField
+          label="Apellidos"
+          name="apellidos"
+          value={formData.apellidos}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Silva Gómez"
+          error={errors.apellidos}
+        />
+      </div>
 
       <FormField
         label="Especialidad / Cátedra"

@@ -46,7 +46,7 @@ async function authenticateUser(identifier, password, roleRequested) {
  * Registra un nuevo usuario con generación automática de credenciales.
  */
 async function registerUser(userData) {
-  const { nombre, apellido, email, role } = userData;
+  const { nombre, apellido, email, role, username: providedUsername, password: providedPassword } = userData;
 
   if (!nombre || !apellido || !email || !role) {
     throw new Error('Faltan campos obligatorios para el registro.');
@@ -64,18 +64,25 @@ async function registerUser(userData) {
     throw new Error('El correo electrónico ya está en uso.');
   }
 
-  // Generar username único
-  let baseUsername = generateBaseUsername(nombre);
-  let randomNum = Math.floor(10 + Math.random() * 90);
-  let username = `${baseUsername}${randomNum}`;
-  while (await userRepository.findByUsernameOrEmail(username)) {
-    randomNum = Math.floor(10 + Math.random() * 90);
+  // Usar el username proporcionado o generar uno único
+  let username = providedUsername;
+  if (username) {
+    if (await userRepository.findByUsernameOrEmail(username)) {
+      throw new Error('El nombre de usuario ya está en uso.');
+    }
+  } else {
+    let baseUsername = generateBaseUsername(nombre);
+    let randomNum = Math.floor(10 + Math.random() * 90);
     username = `${baseUsername}${randomNum}`;
+    while (await userRepository.findByUsernameOrEmail(username)) {
+      randomNum = Math.floor(10 + Math.random() * 90);
+      username = `${baseUsername}${randomNum}`;
+    }
   }
 
-  // Generar contraseña y cifrar
-  const password = generateSecurePassword();
-  
+  // Usar la contraseña proporcionada o generar una segura
+  const password = providedPassword || generateSecurePassword();
+
   // Hash para login (Bcrypt)
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash(password, salt);
@@ -89,6 +96,7 @@ async function registerUser(userData) {
     email,
     username,
     role: normalizedRole,
+    especialidad: userData.especialidad || userData.specialty || null,
     password_hash,
     password_encrypted
   };
@@ -122,8 +130,70 @@ async function getDecryptedCredentials(targetUserId) {
   return decryptedPassword;
 }
 
+/**
+ * Actualiza los datos de un usuario existente.
+ */
+async function updateUser(id, userData) {
+  const { nombre, apellido, email, role } = userData;
+
+  if (!id) {
+    throw new Error('ID de usuario requerido para la actualización.');
+  }
+
+  if (email) {
+    const existingUser = await userRepository.findByUsernameOrEmail(email);
+    if (existingUser && existingUser.id !== Number(id)) {
+      throw new Error('El correo electrónico ya está en uso por otro usuario.');
+    }
+  }
+
+  if (role) {
+    const VALID_ROLES = ['ADMIN', 'DOCENTE', 'ESTUDIANTE'];
+    const normalizedRole = role.toUpperCase();
+    if (!VALID_ROLES.includes(normalizedRole)) {
+      throw new Error('Rol inválido. Debe ser ADMIN, DOCENTE o ESTUDIANTE.');
+    }
+    userData.role = normalizedRole;
+  }
+
+  const updated = await userRepository.updateUser(id, userData);
+  if (!updated) {
+    throw new Error('Usuario no encontrado.');
+  }
+
+  return { id, ...userData };
+}
+
+/**
+ * Elimina un usuario de la base de datos.
+ */
+async function deleteUser(id) {
+  if (!id) {
+    throw new Error('ID de usuario requerido para la eliminación.');
+  }
+
+  const deleted = await userRepository.deleteUser(id);
+  if (!deleted) {
+    throw new Error('Usuario no encontrado.');
+  }
+
+  return { id, deleted: true };
+}
+
+async function getUsersByRole(role) {
+  const VALID_ROLES = ['ADMIN', 'DOCENTE', 'ESTUDIANTE'];
+  const normalizedRole = String(role).toUpperCase();
+  if (!VALID_ROLES.includes(normalizedRole)) {
+    throw new Error('Rol inválido. Debe ser ADMIN, DOCENTE o ESTUDIANTE.');
+  }
+  return userRepository.findAllByRole(normalizedRole);
+}
+
 module.exports = {
   authenticateUser,
   registerUser,
-  getDecryptedCredentials
+  getDecryptedCredentials,
+  updateUser,
+  deleteUser,
+  getUsersByRole
 };

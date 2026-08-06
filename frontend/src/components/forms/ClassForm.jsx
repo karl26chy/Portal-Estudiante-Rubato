@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../Toast';
 import { UserCheck, BookOpen, Calendar, Clock, Layers, Filter } from 'lucide-react';
 import FormField from './FormField';
 import FormActions from './FormActions';
+import { normalizeText, getFullName } from '../../utils/teacherUtils';
 import { MODULOS_OFI, SEMESTRES_POR_MODULO, ASIGNATURAS_POR_MODULO } from '../../constants/pensumData';
 
 export const formatTime12h = (timeStr) => {
@@ -26,7 +27,7 @@ export const formatTime12h = (timeStr) => {
 
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export default function ClassForm({ onSubmit, onCancel }) {
+export default function ClassForm({ initialData, onSubmit, onCancel }) {
   const { students, teachers } = useDataManager();
   const { addToast } = useToast();
 
@@ -41,6 +42,36 @@ export default function ClassForm({ onSubmit, onCancel }) {
     endTime: '10:00',
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (initialData) {
+      const teacher = teachers.find(t =>
+        normalizeText(getFullName(t)) === normalizeText(initialData.teacherName || initialData.profesor || initialData.profesora || initialData.director)
+      );
+      const names = (initialData.studentNames && initialData.studentNames.length > 0)
+        ? initialData.studentNames
+        : (initialData.studentName ? [initialData.studentName] : []);
+      const ids = names
+        .map(name => {
+          const found = students.find(s => normalizeText(getFullName(s)) === normalizeText(name));
+          return found ? found.id : null;
+        })
+        .filter(id => id !== null);
+      const fallbackIds = (initialData.studentId !== undefined && initialData.studentId !== null) ? [initialData.studentId] : [];
+      setFormData({
+        module: initialData.module || '',
+        semester: initialData.semester || '',
+        subject: initialData.subject || initialData.asignatura || '',
+        teacherId: teacher ? teacher.id : '',
+        selectedStudentIds: ids.length > 0 ? ids : fallbackIds,
+        day: initialData.day || 'Lunes',
+        startTime: initialData.startTime || '08:00',
+        endTime: initialData.endTime || '10:00',
+      });
+    } else {
+      setFormData({ module: '', semester: '', subject: '', teacherId: '', selectedStudentIds: [], day: 'Lunes', startTime: '08:00', endTime: '10:00' });
+    }
+  }, [initialData]);
 
   const handleModuleChange = (e) => {
     const selectedMod = e.target.value;
@@ -123,23 +154,26 @@ export default function ClassForm({ onSubmit, onCancel }) {
         ...formData,
         startTimeFormatted: formattedStart,
         endTimeFormatted: formattedEnd,
-        teacherName: assignedTeacher ? assignedTeacher.name : 'Docente Asignado',
+        teacherName: assignedTeacher ? getFullName(assignedTeacher) : 'Docente Asignado',
         studentCount: enrolledStudents.length,
-        studentNames: enrolledStudents.map(s => s.name),
+        studentNames: enrolledStudents.map(s => getFullName(s)),
+        studentIds: enrolledStudents.map(s => s.id),
         horario: `${formData.day} ${formattedStart} - ${formattedEnd}`,
       };
 
       onSubmit(classPayload);
-      setFormData({
-        module: '',
-        semester: '',
-        subject: '',
-        teacherId: '',
-        selectedStudentIds: [],
-        day: 'Lunes',
-        startTime: '08:00',
-        endTime: '10:00',
-      });
+      if (!initialData) {
+        setFormData({
+          module: '',
+          semester: '',
+          subject: '',
+          teacherId: '',
+          selectedStudentIds: [],
+          day: 'Lunes',
+          startTime: '08:00',
+          endTime: '10:00',
+        });
+      }
     } else {
       addToast('Por favor complete todos los campos obligatorios y verifique el rango de horario', 'error');
     }
@@ -216,7 +250,7 @@ export default function ClassForm({ onSubmit, onCancel }) {
           { value: '', label: 'Seleccionar Docente...', disabled: true },
           ...teachers.map((t) => ({
             value: t.id,
-            label: `${t.name} — ${t.specialty || t.especialidad || 'Docente'}`
+            label: `${getFullName(t)} — ${t.specialty || t.especialidad || 'Docente'}`
           }))
         ]}
       />
@@ -251,7 +285,6 @@ export default function ClassForm({ onSubmit, onCancel }) {
               return (
                 <label
                   key={student.id}
-                  onClick={() => toggleStudentSelection(student.id)}
                   className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer ${
                     isChecked
                       ? 'bg-purple-100/80 border-[#6b0060] text-slate-900 font-semibold'
@@ -262,10 +295,10 @@ export default function ClassForm({ onSubmit, onCancel }) {
                     <input
                       type="checkbox"
                       checked={isChecked}
-                      onChange={() => {}}
+                      onChange={() => toggleStudentSelection(student.id)}
                       className="w-4 h-4 text-[#6b0060] rounded border-slate-300 focus:ring-[#6b0060] shrink-0"
                     />
-                    <span className="text-xs truncate">{student.name}</span>
+                    <span className="text-xs truncate">{getFullName(student)}</span>
                   </div>
                   <span className="text-[11px] text-slate-500 font-medium hidden sm:block shrink-0">
                     {student.instrument} — {student.module || 'Módulo 1'} {student.semester ? `(${student.semester})` : ''}
@@ -323,7 +356,7 @@ export default function ClassForm({ onSubmit, onCancel }) {
       </div>
 
       <FormActions
-        submitLabel="Crear y Programar Clase (Admin)"
+        submitLabel={initialData ? 'Actualizar Clase' : 'Crear y Programar Clase (Admin)'}
         onCancel={onCancel}
       />
     </form>

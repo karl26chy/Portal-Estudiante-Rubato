@@ -14,6 +14,7 @@ function generateToken(payload) {
     id: payload.id,
     role: payload.role,
     nombre: payload.nombre,
+    apellido: payload.apellido,
     usuario: payload.usuario
   };
   return jwt.sign(safePayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });

@@ -3,9 +3,23 @@ import { Shield, User, Mail } from 'lucide-react';
 import FormField from './FormField';
 import FormActions from './FormActions';
 
+function parseNameFromLegacy(initialData) {
+  if (initialData.nombre && initialData.apellidos) {
+    return { nombre: initialData.nombre, apellidos: initialData.apellidos };
+  }
+  if (initialData.name) {
+    const tokens = initialData.name.trim().split(/\s+/);
+    const apellidos = tokens.length > 1 ? tokens[tokens.length - 1] : '';
+    const nombre = tokens.length > 1 ? tokens.slice(0, -1).join(' ') : tokens[0] || '';
+    return { nombre, apellidos };
+  }
+  return { nombre: '', apellidos: '' };
+}
+
 export default function AdminForm({ initialData, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    name: '',
+    nombre: '',
+    apellidos: '',
     email: '',
     role: 'SuperAdmin',
   });
@@ -13,20 +27,25 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
 
   useEffect(() => {
     if (initialData) {
+      const { nombre, apellidos } = parseNameFromLegacy(initialData);
       setFormData({
-        name: initialData.name || '',
+        nombre,
+        apellidos,
         email: initialData.email || '',
         role: 'SuperAdmin',
       });
     } else {
-      setFormData({ name: '', email: '', role: 'SuperAdmin' });
+      setFormData({ nombre: '', apellidos: '', email: '', role: 'SuperAdmin' });
     }
   }, [initialData]);
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim() || formData.name.length < 3) {
-      newErrors.name = 'El nombre completo debe tener al menos 3 caracteres';
+    if (!formData.nombre.trim() || formData.nombre.length < 2) {
+      newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    }
+    if (!formData.apellidos.trim() || formData.apellidos.length < 2) {
+      newErrors.apellidos = 'Los apellidos deben tener al menos 2 caracteres';
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email || !emailRegex.test(formData.email)) {
@@ -41,7 +60,7 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
     if (validate()) {
       onSubmit({ ...formData, role: 'SuperAdmin' });
       if (!initialData) {
-        setFormData({ name: '', email: '', role: 'SuperAdmin' });
+        setFormData({ nombre: '', apellidos: '', email: '', role: 'SuperAdmin' });
       }
     }
   };
@@ -56,18 +75,27 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Nombre Completo */}
-      <FormField
-        label="Nombre Completo"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        icon={User}
-        placeholder="Ej: Gloria Ramírez"
-        error={errors.name}
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Nombre(s)"
+          name="nombre"
+          value={formData.nombre}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Gloria"
+          error={errors.nombre}
+        />
+        <FormField
+          label="Apellidos"
+          name="apellidos"
+          value={formData.apellidos}
+          onChange={handleChange}
+          icon={User}
+          placeholder="Ej: Ramírez"
+          error={errors.apellidos}
+        />
+      </div>
 
-      {/* Correo Electrónico */}
       <FormField
         label="Correo Electrónico"
         name="email"
@@ -79,7 +107,6 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
         error={errors.email}
       />
 
-      {/* Rol de Administrador Fijo: SuperAdmin */}
       <div>
         <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1">
           Rol de Sistema
@@ -95,7 +122,6 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
         </div>
       </div>
 
-      {/* Botones de acción */}
       <FormActions
         submitLabel={initialData ? 'Actualizar SuperAdmin' : 'Guardar Administrador (SuperAdmin)'}
         onCancel={onCancel}

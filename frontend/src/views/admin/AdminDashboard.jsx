@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import TabButton from '../../components/TabButton';
@@ -12,18 +12,30 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
-import { Shield, RefreshCw, UserCheck, Copy, Check, X, Sparkles, Eye, EyeOff, BookOpen } from 'lucide-react';
+import { getLastName } from '../../utils/teacherUtils';
+import { removeStudentFromClass as apiRemoveStudentFromClass, createClass as apiCreateClass, updateClass as apiUpdateClass, deleteClass as apiDeleteClass } from '../../api/classApi';
+import { Shield, UserCheck, Copy, Check, X, Pencil, Sparkles, Eye, EyeOff, BookOpen, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+
+const getFullName = (item) => {
+  if (!item) return '';
+  if (item.nombre || item.apellidos) {
+    return `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
+  }
+  if (item.name) return item.name.trim();
+  return '';
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('students');
   const [editingItem, setEditingItem] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, item: null, type: null });
   
-  // Estado para la tarjeta modal de credenciales generadas
   const [generatedCredentialsModal, setGeneratedCredentialsModal] = useState(null);
   const [copiedField, setCopiedField] = useState('');
+  const [studentClassesModal, setStudentClassesModal] = useState(null);
+  const [expandedClassId, setExpandedClassId] = useState(null);
+  const [removeStudentDialog, setRemoveStudentDialog] = useState(null);
 
-  // Estado para visibilidad de contraseñas individuales en la tabla (icono de ojo 👁️)
   const [visiblePasswords, setVisiblePasswords] = useState({});
 
   const togglePasswordVisibility = (id) => {
@@ -39,6 +51,8 @@ export default function AdminDashboard() {
     admins,
     currentAdmin,
     classes,
+    loading,
+    refresh,
     addStudent,
     updateStudent,
     deleteStudent,
@@ -50,64 +64,258 @@ export default function AdminDashboard() {
     deleteAdmin,
     setCurrentAdmin,
     addClass,
-    deleteClass
+    updateClass,
+    deleteClass,
+    checkClassConflict,
+    removeStudentFromClass,
   } = useDataManager();
 
   const { addToast } = useToast();
 
-  // --- Handlers de Envío ---
-  const handleStudentSubmit = (data) => {
-    if (editingItem) {
-      updateStudent(editingItem.id, data);
-      addToast(`Estudiante "${data.name}" actualizado correctamente`, 'success');
-    } else {
-      const createdStudent = addStudent(data);
-      addToast(`Estudiante "${data.name}" registrado correctamente`, 'success');
+  useEffect(() => {
+    refresh();
+  }, []);
 
-      // Si se generaron credenciales, mostrar la tarjeta de información de acceso
-      if (data.credentials) {
-        setGeneratedCredentialsModal({
-          studentName: data.name,
-          usuario: data.credentials.usuario,
-          password: data.credentials.password,
+  const registerBackendUser = async ({ nombre, apellidos, email, role, username, password, especialidad }) => {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre,
+        apellido: apellidos,
+        email,
+        role,
+        username: username || undefined,
+        password: password || undefined,
+        especialidad: especialidad || undefined
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al registrar el usuario en la base de datos.');
+    }
+    return data;
+  };
+
+  const updateBackendUser = async (dbId, { nombre, apellidos, email, role, especialidad }) => {
+    const response = await fetch(`/api/auth/user/${dbId}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, apellido: apellidos, email, role, especialidad })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al actualizar el usuario en la base de datos.');
+    }
+    return data;
+  };
+
+  const deleteBackendUser = async (dbId) => {
+    const response = await fetch(`/api/auth/user/${dbId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al eliminar el usuario de la base de datos.');
+    }
+    return data;
+  };
+
+  const handleStudentSubmit = async (data) => {
+    if (editingItem) {
+      if (editingItem.dbId) {
+        try {
+          await updateBackendUser(editingItem.dbId, {
+            nombre: data.nombre,
+            apellidos: data.apellidos,
+            email: data.email,
+            role: 'ESTUDIANTE'
+          });
+        } catch (err) {
+          addToast(err.message, 'error');
+          return;
+        }
+      }
+      updateStudent(editingItem.id, data);
+      addToast(`Estudiante "${getFullName(data)}" actualizado correctamente`, 'success');
+    } else {
+      try {
+        const result = await registerBackendUser({
+          nombre: data.nombre,
+          apellidos: data.apellidos,
+          email: data.email,
+          role: 'ESTUDIANTE',
+          username: data.credentials?.usuario,
+          password: data.credentials?.password
         });
+        addStudent({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        addToast(`Estudiante "${getFullName(data)}" registrado correctamente`, 'success');
+        setGeneratedCredentialsModal({
+          studentName: getFullName(data),
+          usuario: result.data.credentials.username,
+          password: result.data.credentials.password,
+        });
+      } catch (err) {
+        addToast(err.message, 'error');
       }
     }
     setEditingItem(null);
   };
 
-  const handleTeacherSubmit = (data) => {
+  const handleTeacherSubmit = async (data) => {
     if (editingItem) {
+      if (editingItem.dbId) {
+        try {
+          await updateBackendUser(editingItem.dbId, {
+            nombre: data.nombre,
+            apellidos: data.apellidos,
+            email: data.email,
+            role: 'DOCENTE',
+            especialidad: data.specialty
+          });
+        } catch (err) {
+          addToast(err.message, 'error');
+          return;
+        }
+      }
       updateTeacher(editingItem.id, data);
-      addToast(`Docente "${data.name}" actualizado correctamente`, 'success');
+      addToast(`Docente "${getFullName(data)}" actualizado correctamente`, 'success');
     } else {
-      addTeacher(data);
-      addToast(`Docente "${data.name}" registrado correctamente`, 'success');
+      try {
+        const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+        const result = await registerBackendUser({
+          nombre: data.nombre,
+          apellidos: data.apellidos,
+          email: data.email,
+          role: 'DOCENTE',
+          password: simplePwd,
+          especialidad: data.specialty
+        });
+        addTeacher({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        addToast(`Docente "${getFullName(data)}" registrado correctamente`, 'success');
+        setGeneratedCredentialsModal({
+          studentName: getFullName(data),
+          usuario: result.data.credentials.username,
+          password: result.data.credentials.password,
+          title: 'Credenciales Generadas',
+          subtitle: 'Acceso para DOCENTE'
+        });
+      } catch (err) {
+        addToast(err.message, 'error');
+      }
     }
     setEditingItem(null);
   };
 
-  const handleAdminSubmit = (data) => {
+  const handleAdminSubmit = async (data) => {
     if (editingItem) {
+      if (editingItem.dbId) {
+        try {
+          await updateBackendUser(editingItem.dbId, {
+            nombre: data.nombre,
+            apellidos: data.apellidos,
+            email: data.email,
+            role: 'ADMIN'
+          });
+        } catch (err) {
+          addToast(err.message, 'error');
+          return;
+        }
+      }
       updateAdmin(editingItem.id, data);
-      addToast(`Administrador "${data.name}" actualizado correctamente`, 'success');
+      addToast(`Administrador "${getFullName(data)}" actualizado correctamente`, 'success');
     } else {
-      addAdmin(data);
-      addToast(`Administrador (SuperAdmin) "${data.name}" registrado correctamente`, 'success');
+      try {
+        const simplePwd = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
+        const result = await registerBackendUser({
+          nombre: data.nombre,
+          apellidos: data.apellidos,
+          email: data.email,
+          role: 'ADMIN',
+          password: simplePwd
+        });
+        addAdmin({ ...data, dbId: result.data.id, credentials: result.data.credentials });
+        addToast(`Administrador (SuperAdmin) "${getFullName(data)}" registrado correctamente`, 'success');
+        setGeneratedCredentialsModal({
+          studentName: getFullName(data),
+          usuario: result.data.credentials.username,
+          password: result.data.credentials.password,
+          title: 'Credenciales Generadas',
+          subtitle: 'Acceso para ADMIN'
+        });
+      } catch (err) {
+        addToast(err.message, 'error');
+      }
     }
     setEditingItem(null);
   };
 
-  const handleClassSubmit = (classData) => {
-    addClass(classData);
-    addToast(`Clase de "${classData.subject}" creada y programada correctamente`, 'success');
+  const handleClassSubmit = async (classData) => {
+    const conflictCheck = checkClassConflict(classData, editingItem ? editingItem.id : null);
+    if (conflictCheck) {
+      addToast(conflictCheck.message, 'error');
+      return;
+    }
+
+    if (editingItem) {
+      try {
+        if (editingItem.dbId) {
+          await apiUpdateClass(editingItem.dbId, {
+            asignatura: classData.subject,
+            modulo: classData.module,
+            semestre: classData.semester,
+            day: classData.day,
+            startTime: classData.startTime,
+            endTime: classData.endTime,
+            horario: classData.horario,
+            teacherName: classData.teacherName,
+            docente_id: classData.teacherId
+          });
+        }
+        updateClass(editingItem.id, classData);
+        addToast(`Clase de "${classData.subject}" actualizada correctamente`, 'success');
+      } catch (err) {
+        console.error('Error al actualizar clase en backend:', err);
+        addToast(`Error al actualizar: ${err.message}`, 'error');
+        return;
+      }
+    } else {
+      try {
+        const enrolledStudents = students.filter(s => (classData.studentIds || []).includes(s.id));
+        const studentDbIds = enrolledStudents.map(s => s.dbId).filter(Boolean);
+        const result = await apiCreateClass({
+          asignatura: classData.subject,
+          modulo: classData.module,
+          semestre: classData.semester,
+          day: classData.day,
+          startTime: classData.startTime,
+          endTime: classData.endTime,
+          horario: classData.horario,
+          teacherName: classData.teacherName,
+          docente_id: classData.teacherId,
+          studentNames: classData.studentNames,
+          studentIds: studentDbIds
+        });
+        const dbId = result.newClass?.id;
+        addClass(dbId ? { ...classData, dbId } : classData);
+        addToast(`Clase de "${classData.subject}" creada y programada correctamente`, 'success');
+      } catch (err) {
+        console.error('Error al crear clase en backend:', err);
+        addClass(classData);
+        addToast(`Clase creada localmente: ${err.message}`, 'warning');
+      }
+    }
+    setEditingItem(null);
   };
 
   const handleDeleteClass = (classItem) => {
     setConfirmDialog({ isOpen: true, item: classItem, type: 'class' });
   };
 
-  // --- Handlers de Eliminación ---
   const handleDeleteStudent = (student) => {
     setConfirmDialog({ isOpen: true, item: student, type: 'student' });
   };
@@ -120,19 +328,36 @@ export default function AdminDashboard() {
     setConfirmDialog({ isOpen: true, item: admin, type: 'admin' });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const { item, type } = confirmDialog;
     if (!item) return;
 
+    if (item.dbId && type !== 'student' && type !== 'teacher' && type !== 'admin') {
+      try {
+        await apiDeleteClass(item.dbId);
+      } catch (err) {
+        addToast(`Error al eliminar clase: ${err.message}`, 'error');
+        return;
+      }
+    } else if (item.dbId) {
+      try {
+        await deleteBackendUser(item.dbId);
+      } catch (err) {
+        addToast(err.message, 'error');
+        return;
+      }
+    }
+
+    const itemName = getFullName(item);
     if (type === 'student') {
       deleteStudent(item.id);
-      addToast(`Estudiante "${item.name}" eliminado`, 'warning');
+      addToast(`Estudiante "${itemName}" eliminado`, 'warning');
     } else if (type === 'teacher') {
       deleteTeacher(item.id);
-      addToast(`Docente "${item.name}" eliminado`, 'warning');
+      addToast(`Docente "${itemName}" eliminado`, 'warning');
     } else if (type === 'admin') {
       deleteAdmin(item.id);
-      addToast(`Administrador "${item.name}" eliminado`, 'warning');
+      addToast(`Administrador "${itemName}" eliminado`, 'warning');
     } else if (type === 'class') {
       deleteClass(item.id);
       addToast(`Clase de "${item.subject}" eliminada`, 'warning');
@@ -140,44 +365,80 @@ export default function AdminDashboard() {
     setConfirmDialog({ isOpen: false, item: null, type: null });
   };
 
+  const handleViewStudentClasses = (student) => {
+    const studentName = getFullName(student);
+    const studentClasses = classes.filter(c =>
+      (c.studentIds || []).includes(student.id) ||
+      (c.studentNames || []).includes(studentName)
+    );
+    setStudentClassesModal({ student, studentName, classes: studentClasses });
+  };
+
+  const handleRemoveStudentFromClass = (classId, student, e) => {
+    e.stopPropagation();
+    removeStudentFromClass(classId, student.id, getFullName(student));
+    addToast(`"${getFullName(student)}" removido de la clase`, 'info');
+  };
+
+  const openRemoveStudentDialog = (classId, student) => {
+    setRemoveStudentDialog({ classId, student });
+  };
+
+  const cancelRemoveStudentDialog = () => {
+    setRemoveStudentDialog(null);
+  };
+
+  const confirmRemoveStudentFromClass = async () => {
+    if (!removeStudentDialog) return;
+    const { classId, student } = removeStudentDialog;
+    const dbId = student.dbId;
+    const claseDbId = classes.find(c => c.id === classId)?.dbId;
+    const studentName = getFullName(student);
+
+    try {
+      if (claseDbId && dbId) {
+        await apiRemoveStudentFromClass(claseDbId, dbId);
+      }
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+    removeStudentFromClass(classId, student.id, studentName);
+    addToast(`"${studentName}" desvinculado de la clase`, 'success');
+    setRemoveStudentDialog(null);
+  };
+
   const handleViewCredentials = async (item) => {
+    const user = item.username || item.credentials?.username;
     let pass = item.password || item.credentials?.password;
-    let user = item.username || item.credentials?.usuario;
 
     if (!pass) {
       try {
-        const response = await fetch(`/api/auth/credentials/${item.id}`);
+        const response = await fetch(`/api/auth/credentials/${item.dbId || item.id}`);
         if (response.ok) {
           const data = await response.json();
           pass = data.password;
+        } else {
+          addToast('No se pudieron obtener las credenciales del servidor', 'error');
+          return;
         }
       } catch {
-        pass = 'Rubato.2026*';
+        addToast('Error al conectar con el servidor para obtener credenciales', 'error');
+        return;
       }
     }
-    if (!pass) pass = 'Rubato.2026*';
-    if (!user) user = item.name ? item.name.toLowerCase().split(' ')[0] + '.rubato48' : 'usuario';
+
+    if (!user || !pass) {
+      addToast('No se encontraron credenciales para este usuario', 'error');
+      return;
+    }
 
     setGeneratedCredentialsModal({
-      studentName: item.name,
+      studentName: getFullName(item),
       usuario: user,
       password: pass,
       title: 'Credenciales del Usuario',
       subtitle: `Acceso para ${item.role || 'usuario'}`
     });
-  };
-
-  // --- Función para Simular Sesión (Cambiar Admin Activo) ---
-  const handleSimulateNextAdmin = () => {
-    if (!admins || admins.length === 0) {
-      addToast('No hay administradores disponibles para alternar', 'warning');
-      return;
-    }
-    const currentIndex = admins.findIndex(a => a.id === currentAdmin?.id);
-    const nextIndex = (currentIndex + 1) % admins.length;
-    const nextAdmin = admins[nextIndex];
-    setCurrentAdmin(nextAdmin);
-    addToast(`Sesión activa simulada como: ${nextAdmin.name} (SuperAdmin)`, 'success');
   };
 
   const cancelEdit = () => {
@@ -191,9 +452,16 @@ export default function AdminDashboard() {
     setTimeout(() => setCopiedField(''), 2000);
   };
 
-  // Columnas para DataTable de Estudiantes
   const studentColumns = [
-    { key: 'name', label: 'Nombre' },
+    {
+      key: 'name',
+      label: 'Nombre',
+      render: (val, row) => (
+        <span className="text-slate-800 font-medium text-xs">
+          {getFullName(row)}
+        </span>
+      )
+    },
     {
       key: 'age',
       label: 'Edad / F. Nacimiento',
@@ -240,7 +508,6 @@ export default function AdminDashboard() {
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
 
-          {/* Encabezado del Módulo */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-800 font-['Playfair_Display',serif]">
@@ -251,26 +518,17 @@ export default function AdminDashboard() {
               </p>
             </div>
 
-            {/* Simular Sesión / Estado Admin Activo (SuperAdmin) */}
             <div className="flex items-center gap-3 bg-white p-2.5 px-4 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
               <div className="w-9 h-9 rounded-xl bg-purple-100 flex items-center justify-center text-[#6b0060] shrink-0">
                 <Shield className="w-5 h-5" />
               </div>
               <div className="text-xs min-w-0">
-                <p className="font-bold text-slate-800 truncate">{currentAdmin?.name || 'Administrador'}</p>
+                <p className="font-bold text-slate-800 truncate">{getFullName(currentAdmin) || 'Administrador'}</p>
                 <p className="text-[#6b0060] font-semibold">SuperAdmin</p>
               </div>
-              <button
-                onClick={handleSimulateNextAdmin}
-                className="ml-2 p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-[#6b0060] transition-colors cursor-pointer shrink-0"
-                title="Simular Cambio de Sesión de Administrador"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
-          {/* Navegación por Pestañas */}
           <div className="mb-6 border-b border-slate-200 pb-px">
             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
               <TabButton
@@ -308,16 +566,14 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Grid de Formulario (Izquierda) y Lista / Directorio (Derecha) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* Columna Izquierda: Formulario en Tarjeta */}
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
                 {activeTab === 'students' && (editingItem ? 'Editar Estudiante' : 'Registrar Estudiante')}
                 {activeTab === 'teachers' && (editingItem ? 'Editar Docente' : 'Registrar Docente')}
                 {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (SuperAdmin)')}
-                {activeTab === 'classes' && 'Crear Nueva Clase (Exclusivo Administrador)'}
+                {activeTab === 'classes' && (editingItem ? 'Editar Clase' : 'Crear Nueva Clase (Exclusivo Administrador)')}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
                 {activeTab === 'students' && (
@@ -343,13 +599,14 @@ export default function AdminDashboard() {
                 )}
                 {activeTab === 'classes' && (
                   <ClassForm
+                    initialData={editingItem}
                     onSubmit={handleClassSubmit}
+                    onCancel={editingItem ? cancelEdit : undefined}
                   />
                 )}
               </div>
             </div>
 
-            {/* Columna Derecha: Vista / Directorio */}
             <div>
               <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
                 {activeTab === 'students' && 'Directorio de Estudiantes'}
@@ -358,7 +615,6 @@ export default function AdminDashboard() {
                 {activeTab === 'classes' && 'Clases Creadas y Programadas'}
               </h2>
 
-              {/* 1. Tabla de Estudiantes */}
               {activeTab === 'students' && (
                 <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
                   <DataTable
@@ -370,17 +626,17 @@ export default function AdminDashboard() {
                     }}
                     onDelete={handleDeleteStudent}
                     onViewCredentials={handleViewCredentials}
+                    onStudentClasses={handleViewStudentClasses}
                   />
                 </div>
               )}
 
-              {/* 2. Grid Responsivo de Tarjetas de Docentes */}
               {activeTab === 'teachers' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {teachers.map((t) => (
                     <UserCard
                       key={t.id}
-                      name={t.name}
+                      name={getFullName(t)}
                       email={t.email}
                       subtitle={
                         <span className="inline-block mt-0.5 px-2.5 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
@@ -399,32 +655,13 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* 3. Lista de Administradores (Rol Único SuperAdmin) */}
               {activeTab === 'admins' && (
                 <div className="space-y-4">
-                  <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#6b0060] uppercase tracking-wider">
-                      Sesión Activa Simulada
-                    </p>
-                    <p className="text-sm font-bold text-slate-800 truncate">
-                      {currentAdmin?.name} — <span className="text-[#6b0060]">SuperAdmin</span>
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSimulateNextAdmin}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer shrink-0 w-full sm:w-auto justify-center"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Simular Siguiente</span>
-                  </button>
-                </div>
-
                   <div className="space-y-3">
                     {admins.map((a) => (
                       <UserCard
                         key={a.id}
-                        name={a.name}
+                        name={getFullName(a)}
                         email={a.email}
                         icon={Shield}
                         layout="horizontal"
@@ -443,7 +680,6 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* 4. Lista de Clases Creadas */}
               {activeTab === 'classes' && (
                 <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
                   {classes.length === 0 ? (
@@ -453,45 +689,115 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {classes.map((cls) => (
-                        <div key={cls.id} className="p-4 rounded-xl border border-slate-200 hover:border-purple-300 transition-all bg-white shadow-xs">
-                          <div className="flex justify-between items-start gap-3 mb-2">
-                            <div className="min-w-0">
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-[#6b0060] mb-1">
-                                {cls.module || 'Módulo Pénsum'} {cls.semester ? `• ${cls.semester}` : ''}
-                              </span>
-                              <h3 className="font-bold text-slate-900 text-base break-words">{cls.subject}</h3>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteClass(cls)}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                              title="Eliminar Clase"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 mt-2">
-                            <p><strong>Docente:</strong> {cls.teacherName || cls.profesor || 'Por asignar'}</p>
-                            <p><strong>Horario:</strong> {cls.horario && (cls.horario.includes('AM') || cls.horario.includes('PM')) ? cls.horario : `${cls.day || 'Lunes'} ${formatTime12h(cls.startTime || '08:00')} - ${formatTime12h(cls.endTime || '10:00')}`}</p>
-                          </div>
-
-                          {cls.studentNames && cls.studentNames.length > 0 && (
-                            <div className="mt-3 pt-2.5 border-t border-slate-100">
-                              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Estudiantes Inscritos ({cls.studentNames.length}):
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {cls.studentNames.map((name, i) => (
-                                  <span key={i} className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-700 rounded-md">
-                                    {name}
-                                  </span>
-                                ))}
+                      {classes.map((cls) => {
+                        const isExpanded = expandedClassId === cls.id;
+                        const enrolledStudents = (cls.studentNames || [])
+                          .map(name => {
+                            const found = students.find(s => getFullName(s) === name);
+                            return found || { nombre: name, apellidos: '' };
+                          })
+                          .sort((a, b) => {
+                            const aLast = getLastName(getFullName(a)).toLowerCase();
+                            const bLast = getLastName(getFullName(b)).toLowerCase();
+                            return aLast.localeCompare(bLast);
+                          });
+                        return (
+                          <div
+                            key={cls.id}
+                            className={`rounded-xl border transition-all bg-white ${
+                              isExpanded ? 'border-[#6b0060] shadow-md' : 'border-slate-200 hover:border-purple-300'
+                            }`}
+                          >
+                            {/* Cabecera clickeable */}
+                            <div className="p-4 flex justify-between items-start gap-3">
+                              <button
+                                onClick={() => setExpandedClassId(isExpanded ? null : cls.id)}
+                                className="flex-1 min-w-0 text-left cursor-pointer group"
+                                title={isExpanded ? 'Cerrar detalle' : 'Ver estudiantes de la clase'}
+                              >
+                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-[#6b0060] mb-1">
+                                  {cls.module || 'Módulo Pénsum'} {cls.semester ? `• ${cls.semester}` : ''}
+                                </span>
+                                <h3 className="font-bold text-slate-900 text-base break-words">{cls.subject}</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-500 mt-1.5">
+                                  <p><strong className="text-slate-600">Docente:</strong> {cls.teacherName || cls.profesor || 'Por asignar'}</p>
+                                  <p><strong className="text-slate-600">Horario:</strong> {cls.horario && (cls.horario.includes('AM') || cls.horario.includes('PM')) ? cls.horario : `${cls.day || 'Lunes'} ${formatTime12h(cls.startTime || '08:00')} - ${formatTime12h(cls.endTime || '10:00')}`}</p>
+                                </div>
+                                <p className="text-[11px] text-[#6b0060] font-semibold mt-1.5 flex items-center gap-1">
+                                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                  {isExpanded ? 'Ocultar estudiantes' : `Ver estudiantes (${(cls.studentNames || []).length})`}
+                                </p>
+                              </button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => setEditingItem(cls)}
+                                  className="p-1.5 text-slate-500 hover:text-[#6b0060] hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Editar Clase"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClass(cls)}
+                                  className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar Clase"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      ))}
+
+                            {/* Panel desplegable con estudiantes */}
+                            {isExpanded && (
+                              <div className="px-4 pb-4 border-t border-slate-100 pt-3">
+                                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                  Estudiantes Matriculados ({enrolledStudents.length})
+                                </p>
+                                {enrolledStudents.length === 0 ? (
+                                  <p className="text-sm text-slate-500 py-6 text-center">
+                                    Esta clase no tiene estudiantes inscritos.
+                                  </p>
+                                ) : (
+                                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                                    <table className="w-full bg-white">
+                                      <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-200">
+                                          <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Nombre</th>
+                                          <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Instrumento</th>
+                                          <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Módulo / Semestre</th>
+                                          <th className="px-3 py-2 text-left text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Correo</th>
+                                          <th className="px-3 py-2 text-center text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Acción</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100">
+                                        {enrolledStudents.map((s, i) => (
+                                          <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-3 py-2 text-sm font-semibold text-slate-800 whitespace-nowrap">{getFullName(s)}</td>
+                                            <td className="px-3 py-2 text-xs text-slate-600">{s.instrument || '—'}</td>
+                                            <td className="px-3 py-2 text-xs text-slate-600">
+                                              {s.module || cls.module || 'Módulo 1'} {s.semester ? `(${s.semester})` : ''}
+                                            </td>
+                                            <td className="px-3 py-2 text-xs text-slate-600">{s.email || '—'}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              <button
+                                                onClick={() => openRemoveStudentDialog(cls.id, s)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors cursor-pointer"
+                                                title="Desvincular estudiante de la clase"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Eliminar
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -503,7 +809,6 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Modal / Tarjeta con Información de Acceso (Credenciales de Estudiante) */}
       {generatedCredentialsModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
@@ -534,7 +839,6 @@ export default function AdminDashboard() {
                 Usuario/Nombre: <span className="font-bold text-slate-900">{generatedCredentialsModal.studentName}</span>
               </p>
 
-              {/* Usuario */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Usuario generado
@@ -553,7 +857,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Contraseña */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Contraseña inicial
@@ -583,17 +886,107 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Dialogo de Confirmación para Eliminación */}
+      {/* Modal: Clases del Estudiante */}
+      {studentClassesModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif] truncate">
+                    Clases de {studentClassesModal.studentName}
+                  </h3>
+                  <p className="text-xs text-slate-500 truncate">
+                    {studentClassesModal.classes.length} clase(s) inscrita(s)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setStudentClassesModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {studentClassesModal.classes.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <BookOpen className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                <p className="text-sm">Este estudiante no está inscrito en ninguna clase.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {studentClassesModal.classes.map((cls) => (
+                  <div key={cls.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-800 text-sm">{cls.subject}</p>
+                        <p className="text-xs text-slate-500">
+                          {cls.day || '—'} · {cls.horario || `${formatTime12h(cls.startTime || '08:00')} - ${formatTime12h(cls.endTime || '10:00')}`}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          handleRemoveStudentFromClass(cls.id, studentClassesModal.student, e);
+                          const updated = studentClassesModal.classes.filter(c => c.id !== cls.id);
+                          if (updated.length === 0) {
+                            setStudentClassesModal(null);
+                          } else {
+                            setStudentClassesModal(prev => ({ ...prev, classes: updated }));
+                          }
+                        }}
+                        className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Remover de esta clase"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                      <p><strong>Docente:</strong> {cls.teacherName || cls.profesor || 'Por asignar'}</p>
+                      <p><strong>Compañeros:</strong> {(cls.studentNames || []).filter(n => n !== studentClassesModal.studentName).join(', ') || 'Ninguno'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setStudentClassesModal(null)}
+              className="w-full mt-4 py-2.5 text-sm font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         onConfirm={confirmDelete}
         onCancel={() => setConfirmDialog({ isOpen: false, item: null, type: null })}
         message={
           confirmDialog.type === 'student'
-            ? `¿Está seguro de eliminar al estudiante "${confirmDialog.item?.name}"?`
+            ? `¿Está seguro de eliminar al estudiante "${getFullName(confirmDialog.item)}"?`
             : confirmDialog.type === 'teacher'
-            ? `¿Está seguro de eliminar al docente "${confirmDialog.item?.name}"?`
-            : `¿Está seguro de eliminar al administrador (SuperAdmin) "${confirmDialog.item?.name}"?`
+            ? `¿Está seguro de eliminar al docente "${getFullName(confirmDialog.item)}"?`
+            : confirmDialog.type === 'class'
+            ? `¿Está seguro de eliminar la clase "${confirmDialog.item?.subject || confirmDialog.item?.asignatura}"?`
+            : `¿Está seguro de eliminar al administrador (SuperAdmin) "${getFullName(confirmDialog.item)}"?`
+        }
+      />
+
+      {/* Modal de Confirmación: Desvincular Estudiante de la Clase */}
+      <ConfirmDialog
+        isOpen={!!removeStudentDialog}
+        onConfirm={confirmRemoveStudentFromClass}
+        onCancel={cancelRemoveStudentDialog}
+        message={
+          removeStudentDialog
+            ? `¿Estás seguro de que deseas desvincular a "${getFullName(removeStudentDialog.student)}" de esta clase?`
+            : ''
         }
       />
 

@@ -1,9 +1,18 @@
 import React from 'react';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye, BookOpen } from 'lucide-react';
 
-function ActionButtons({ row, onEdit, onDelete, onViewCredentials }) {
+function ActionButtons({ row, onEdit, onDelete, onViewCredentials, onStudentClasses }) {
   return (
     <div className="flex items-center gap-1">
+      {onStudentClasses && (
+        <button
+          onClick={() => onStudentClasses(row)}
+          className="p-2 text-slate-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+          title="Ver clases del estudiante"
+        >
+          <BookOpen className="w-4 h-4" />
+        </button>
+      )}
       {onViewCredentials && (
         <button
           onClick={() => onViewCredentials(row)}
@@ -31,7 +40,7 @@ function ActionButtons({ row, onEdit, onDelete, onViewCredentials }) {
   );
 }
 
-export default function DataTable({ columns, data, onEdit, onDelete, onViewCredentials }) {
+export default function DataTable({ columns, data, onEdit, onDelete, onViewCredentials, onStudentClasses }) {
   return (
     <>
       {/* Vista Tabla (md y superior) */}
@@ -71,7 +80,7 @@ export default function DataTable({ columns, data, onEdit, onDelete, onViewCrede
                   ))}
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-2">
-                      <ActionButtons row={row} onEdit={onEdit} onDelete={onDelete} onViewCredentials={onViewCredentials} />
+                      <ActionButtons row={row} onEdit={onEdit} onDelete={onDelete} onViewCredentials={onViewCredentials} onStudentClasses={onStudentClasses} />
                     </div>
                   </td>
                 </tr>
@@ -106,7 +115,7 @@ export default function DataTable({ columns, data, onEdit, onDelete, onViewCrede
                       {contactFields.map((col) => (col.render ? col.render(row[col.key], row) : row[col.key])).filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  <ActionButtons row={row} onEdit={onEdit} onDelete={onDelete} onViewCredentials={onViewCredentials} />
+                  <ActionButtons row={row} onEdit={onEdit} onDelete={onDelete} onViewCredentials={onViewCredentials} onStudentClasses={onStudentClasses} />
                 </div>
 
                 {detailFields.length > 0 && (

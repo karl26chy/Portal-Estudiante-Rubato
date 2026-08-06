@@ -2,54 +2,36 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+const normalizeRole = (role) => {
+  const map = { 'ADMIN': 'admin', 'DOCENTE': 'professor', 'ESTUDIANTE': 'student' };
+  return map[String(role).toUpperCase()] || String(role).toLowerCase();
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const clearSession = () => {
-    localStorage.removeItem('rubato_active_user');
-    setUser(null);
-  };
-
   const checkAuth = async () => {
-    const savedUser = localStorage.getItem('rubato_active_user');
     try {
       setLoading(true);
-      if (!savedUser) {
-        setUser(null);
-        return;
-      }
-
-      // Validar la sesión contra el backend (cookie JWT HttpOnly)
-      const response = await fetch('/api/auth/me');
+      const response = await fetch('/api/auth/me', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated && data.user) {
-          const sessionUser = {
+          setUser({
             id: data.user.id,
             nombre: data.user.nombre,
+            apellido: data.user.apellido,
             usuario: data.user.usuario,
-            role: data.user.role.toLowerCase()
-          };
-          setUser(sessionUser);
-          localStorage.setItem('rubato_active_user', JSON.stringify(sessionUser));
+            role: normalizeRole(data.user.role)
+          });
           return;
         }
       }
-
-      if (response.status === 401 || response.status === 403) {
-        // Token expirado o inválido: sesión no válida
-        clearSession();
-      }
-      // Si hay otro error (p. ej. backend caído), conservar la sesión local
-    } catch (err) {
-      // Error de red: conservar la sesión local almacenada
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        clearSession();
-      }
+      setUser(null);
+    } catch {
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -59,7 +41,6 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // Función de Login conectada al backend
   const login = async (usuario, password, roleRequested = null) => {
     try {
       setLoading(true);
@@ -67,6 +48,7 @@ export function AuthProvider({ children }) {
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario, password, roleRequested })
       });
@@ -80,12 +62,12 @@ export function AuthProvider({ children }) {
       const loggedUser = {
         id: data.user.id,
         nombre: data.user.nombre,
+        apellido: data.user.apellido,
         usuario: data.user.usuario,
-        role: data.user.role.toLowerCase() // Normalizar para el frontend (admin, student, professor)
+        role: normalizeRole(data.user.role)
       };
 
       setUser(loggedUser);
-      localStorage.setItem('rubato_active_user', JSON.stringify(loggedUser));
       return loggedUser;
     } catch (err) {
       setError(err.message);
@@ -95,14 +77,13 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Función de Logout: invalida la cookie JWT en el servidor y limpia la sesión local
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (err) {
-      console.error('Error al cerrar sesión en el servidor:', err);
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch {
+      // se ignora
     } finally {
-      clearSession();
+      setUser(null);
     }
   };
 

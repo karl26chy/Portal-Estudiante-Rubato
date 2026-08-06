@@ -1,32 +1,54 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { normalizeText } from '../utils/teacherUtils';
 
 const DataManagerContext = createContext(null);
 
-const initialStudents = [
-  { id: 1, name: "Ana López", birthdate: "2010-05-14", age: 16, instrument: "Piano", email: "ana.lopez@rubato.org", phone: "3001234567", username: "ana.rubato12", password: "Rubato.2026*", module: "Módulo 1", semester: "Módulo 1-1" },
-  { id: 2, name: "Carlos Ruiz", birthdate: "2012-08-20", age: 14, instrument: "Violín", email: "carlos.ruiz@rubato.org", phone: "3109876543", username: "carlos.rubato48", password: "Rubato.2026*", module: "Módulo 1", semester: "Módulo 1-4" },
-  { id: 3, name: "María Fernández", birthdate: "2014-03-11", age: 12, instrument: "Guitarra", email: "maria.fernandez@rubato.org", phone: "3204567890", username: "maria.rubato35", password: "Rubato.2026*", module: "Módulo 2", semester: "Módulo 2-3" },
-  { id: 4, name: "Jorge Castillo", birthdate: "2016-11-05", age: 10, instrument: "Batería", email: "jorge.castillo@rubato.org", phone: "3156543210", username: "jorge.rubato77", password: "Rubato.2026*", module: "Módulo 2", semester: "Módulo 2-4" },
-  { id: 5, name: "Sofía Morales", birthdate: "2018-01-29", age: 8, instrument: "Piano", email: "sofia.morales@rubato.org", phone: "3018889900", username: "sofia.rubato91", password: "Rubato.2026*", module: "Módulo 3", semester: "Módulo 3-2" },
-];
+const getFullName = (item) => `${(item.nombre || '')} ${(item.apellidos || '')}`.trim();
 
-const initialProfessors = [
-  { id: 1, name: "Maestro Carlos Silva", specialty: "Piano Principal", email: "c.silva@rubato.org" },
-  { id: 2, name: "Dra. María González", specialty: "Violín y Cuerdas", email: "m.gonzalez@rubato.org" },
-  { id: 3, name: "Prof. Laura Sánchez", specialty: "Guitarra Clásica", email: "l.sanchez@rubato.org" },
-];
+async function apiFetch(url, opts = {}) {
+  const res = await fetch(url, { credentials: 'include', ...opts });
+  if (!res.ok) throw new Error('Error de API');
+  return res.json();
+}
 
-const initialAdmins = [
-  { id: 1, name: "Director Fundación Rubato", email: "admin@rubato.org", role: "SuperAdmin" },
-  { id: 2, name: "Gloria Ramírez", email: "g.ramirez@rubato.org", role: "SuperAdmin" },
-  { id: 3, name: "Andrés Castro", email: "a.castro@rubato.org", role: "SuperAdmin" },
-];
+const toMinutes = (time) => {
+  if (!time) return null;
+  const parts = String(time).split(':').map(Number);
+  if (parts.length < 2 || parts.some(isNaN)) return null;
+  return parts[0] * 60 + parts[1];
+};
 
-const initialClasses = [
-  { id: 1, studentId: 1, studentName: "Ana López", subject: "Coro", module: "Módulo 1", semester: "Módulo 1-1", teacherName: "Maestro Carlos Silva", day: "Lunes", startTime: "08:00", endTime: "10:00", horario: "Lunes 08:00 AM - 10:00 AM", studentNames: ["Ana López"] },
-  { id: 2, studentId: 2, studentName: "Carlos Ruiz", subject: "Armonía", module: "Módulo 2", semester: "Módulo 2-1", teacherName: "Dra. María González", day: "Martes", startTime: "14:00", endTime: "16:00", horario: "Martes 02:00 PM - 04:00 PM", studentNames: ["Carlos Ruiz", "Jorge Castillo"] },
-  { id: 3, studentId: 3, studentName: "María Fernández", subject: "Pedagogía", module: "Módulo 3", semester: "Módulo 3-1", teacherName: "Prof. Laura Sánchez", day: "Miércoles", startTime: "10:00", endTime: "12:00", horario: "Miércoles 10:00 AM - 12:00 PM", studentNames: ["María Fernández"] },
-];
+const mapUser = (u) => ({
+  id: u.id,
+  nombre: u.nombre,
+  apellidos: u.apellido,
+  email: u.email,
+  username: u.username,
+  role: u.role,
+  especialidad: u.especialidad || '',
+  dbId: u.id
+});
+
+const mapClass = (c) => ({
+  id: c.id,
+  dbId: c.id,
+  asignatura: c.asignatura,
+  subject: c.asignatura,
+  module: c.modulo,
+  semester: c.semestre,
+  teacherName: c.profesor_nombre,
+  profesor: c.profesor_nombre,
+  profesor_nombre: c.profesor_nombre,
+  dia_semana: c.dia_semana,
+  day: c.dia_semana,
+  horario: c.horario,
+  startTime: c.hora_inicio ? c.hora_inicio.substring(0, 5) : '08:00',
+  endTime: c.hora_fin ? c.hora_fin.substring(0, 5) : '10:00',
+  aula: c.aula,
+  nota: c.nota,
+  asistencia: c.asistencia,
+  docente_id: c.docente_id
+});
 
 export function DataManagerProvider({ children }) {
   const [students, setStudents] = useState([]);
@@ -34,162 +56,180 @@ export function DataManagerProvider({ children }) {
   const [admins, setAdmins] = useState([]);
   const [currentAdmin, setCurrentAdminState] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // 1. Estudiantes
-    const savedStudents = localStorage.getItem('rubato_students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
-    } else {
-      setStudents(initialStudents);
-      localStorage.setItem('rubato_students', JSON.stringify(initialStudents));
+  const fetchAll = async () => {
+    try {
+      const [classesRes, studentsRes, teachersRes, adminsRes] = await Promise.all([
+        apiFetch('/api/classes'),
+        apiFetch('/api/auth/users?role=ESTUDIANTE'),
+        apiFetch('/api/auth/users?role=DOCENTE'),
+        apiFetch('/api/auth/users?role=ADMIN')
+      ]);
+      setClasses((classesRes.classes || []).map(mapClass));
+      setStudents((studentsRes.users || []).map(mapUser));
+      setTeachers((teachersRes.users || []).map(mapUser));
+      setAdmins((adminsRes.users || []).map(mapUser));
+    } catch {
+      // silencioso — el admin ya ve toasts de error en sus handlers
+    } finally {
+      setLoading(false);
     }
-
-    // 2. Docentes / Profesores
-    const savedProfessors = localStorage.getItem('rubato_professors') || localStorage.getItem('rubato_teachers');
-    if (savedProfessors) {
-      const parsedProfessors = JSON.parse(savedProfessors);
-      setTeachers(parsedProfessors);
-      localStorage.setItem('rubato_professors', JSON.stringify(parsedProfessors));
-    } else {
-      setTeachers(initialProfessors);
-      localStorage.setItem('rubato_professors', JSON.stringify(initialProfessors));
-    }
-
-    // 3. Administradores (Rol Único SuperAdmin)
-    const savedAdmins = localStorage.getItem('rubato_admins');
-    if (savedAdmins) {
-      const parsedAdmins = JSON.parse(savedAdmins).map(a => ({ ...a, role: 'SuperAdmin' }));
-      setAdmins(parsedAdmins);
-      localStorage.setItem('rubato_admins', JSON.stringify(parsedAdmins));
-    } else {
-      setAdmins(initialAdmins);
-      localStorage.setItem('rubato_admins', JSON.stringify(initialAdmins));
-    }
-
-    // 4. Admin Actual Simulado
-    const savedCurrentAdmin = localStorage.getItem('rubato_current_admin');
-    if (savedCurrentAdmin) {
-      const parsedCurrentAdmin = { ...JSON.parse(savedCurrentAdmin), role: 'SuperAdmin' };
-      setCurrentAdminState(parsedCurrentAdmin);
-    } else {
-      const defaultAdmin = initialAdmins[0];
-      setCurrentAdminState(defaultAdmin);
-      localStorage.setItem('rubato_current_admin', JSON.stringify(defaultAdmin));
-    }
-
-    // 5. Clases
-    const savedClasses = localStorage.getItem('rubato_classes');
-    if (savedClasses) {
-      setClasses(JSON.parse(savedClasses));
-    } else {
-      setClasses(initialClasses);
-      localStorage.setItem('rubato_classes', JSON.stringify(initialClasses));
-    }
-  }, []);
-
-  const saveToLocalStorage = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
   };
 
-  // --- CRUD Estudiantes ---
+  useEffect(() => {
+    localStorage.removeItem('rubato_students');
+    localStorage.removeItem('rubato_professors');
+    localStorage.removeItem('rubato_teachers');
+    localStorage.removeItem('rubato_admins');
+    localStorage.removeItem('rubato_current_admin');
+    localStorage.removeItem('rubato_classes');
+    setLoading(false);
+  }, []);
+
   const addStudent = (student) => {
     const newStudent = { ...student, id: Date.now() };
-    const newStudents = [...students, newStudent];
-    setStudents(newStudents);
-    saveToLocalStorage('rubato_students', newStudents);
+    setStudents((prev) => [...prev, newStudent]);
     return newStudent;
   };
 
   const updateStudent = (id, updatedStudent) => {
-    // Merge con el registro existente para conservar campos no enviados (p. ej. credentials)
-    const newStudents = students.map(s => s.id === id ? { ...s, ...updatedStudent, id } : s);
-    setStudents(newStudents);
-    saveToLocalStorage('rubato_students', newStudents);
+    setStudents((prev) => prev.map((s) => s.id === id ? { ...s, ...updatedStudent, id } : s));
   };
 
   const deleteStudent = (id) => {
-    const newStudents = students.filter(s => s.id !== id);
-    setStudents(newStudents);
-    saveToLocalStorage('rubato_students', newStudents);
-    const newClasses = classes.filter(c => c.studentId !== id);
-    setClasses(newClasses);
-    saveToLocalStorage('rubato_classes', newClasses);
+    const numericId = Number(id);
+    setStudents((prev) => prev.filter((s) => s.id !== numericId));
   };
 
-  // --- CRUD Docentes / Profesores ---
   const addTeacher = (teacher) => {
     const newTeacher = { ...teacher, id: Date.now() };
-    const newTeachers = [...teachers, newTeacher];
-    setTeachers(newTeachers);
-    saveToLocalStorage('rubato_professors', newTeachers);
+    setTeachers((prev) => [...prev, newTeacher]);
     return newTeacher;
   };
 
   const updateTeacher = (id, updatedTeacher) => {
-    const newTeachers = teachers.map(t => t.id === id ? { ...updatedTeacher, id } : t);
-    setTeachers(newTeachers);
-    saveToLocalStorage('rubato_professors', newTeachers);
+    setTeachers((prev) => prev.map((t) => t.id === id ? { ...updatedTeacher, id } : t));
   };
 
   const deleteTeacher = (id) => {
-    const newTeachers = teachers.filter(t => t.id !== id);
-    setTeachers(newTeachers);
-    saveToLocalStorage('rubato_professors', newTeachers);
+    setTeachers((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // --- CRUD Administradores (SuperAdmin) ---
   const addAdmin = (admin) => {
     const newAdmin = { ...admin, id: Date.now(), role: 'SuperAdmin' };
-    const newAdmins = [...admins, newAdmin];
-    setAdmins(newAdmins);
-    saveToLocalStorage('rubato_admins', newAdmins);
+    setAdmins((prev) => [...prev, newAdmin]);
     return newAdmin;
   };
 
   const updateAdmin = (id, updatedAdmin) => {
     const newAdminObj = { ...updatedAdmin, id, role: 'SuperAdmin' };
-    const newAdmins = admins.map(a => a.id === id ? newAdminObj : a);
-    setAdmins(newAdmins);
-    saveToLocalStorage('rubato_admins', newAdmins);
+    setAdmins((prev) => prev.map((a) => a.id === id ? newAdminObj : a));
     if (currentAdmin && currentAdmin.id === id) {
-      setCurrentAdmin(newAdminObj);
+      setCurrentAdminState(newAdminObj);
     }
   };
 
   const deleteAdmin = (id) => {
-    const newAdmins = admins.filter(a => a.id !== id);
-    setAdmins(newAdmins);
-    saveToLocalStorage('rubato_admins', newAdmins);
-    if (currentAdmin && currentAdmin.id === id && newAdmins.length > 0) {
-      setCurrentAdmin(newAdmins[0]);
+    setAdmins((prev) => prev.filter((a) => a.id !== id));
+    if (currentAdmin && currentAdmin.id === id) {
+      setCurrentAdminState(null);
     }
   };
 
   const setCurrentAdmin = (adminObj) => {
-    const superAdminObj = { ...adminObj, role: 'SuperAdmin' };
-    setCurrentAdminState(superAdminObj);
-    saveToLocalStorage('rubato_current_admin', superAdminObj);
+    setCurrentAdminState({ ...adminObj, role: 'SuperAdmin' });
   };
 
-  // --- Clases ---
   const addClass = (classData) => {
-    const student = students.find(s => s.id === Number(classData.studentId) || s.id === classData.studentId);
+    const conflictCheck = checkClassConflict(classData);
+    if (conflictCheck) {
+      return { ok: false, conflict: conflictCheck.conflict, message: conflictCheck.message };
+    }
+
     const newClass = {
       ...classData,
       id: Date.now(),
-      studentName: student ? student.name : classData.studentName || 'Estudiante',
     };
-    const newClasses = [...classes, newClass];
-    setClasses(newClasses);
-    saveToLocalStorage('rubato_classes', newClasses);
-    return newClass;
+    setClasses((prev) => [...prev, newClass]);
+    return { ok: true, newClass };
+  };
+
+  const updateClass = (id, updatedClass) => {
+    const conflictCheck = checkClassConflict(updatedClass, id);
+    if (conflictCheck) {
+      return { ok: false, conflict: conflictCheck.conflict, message: conflictCheck.message };
+    }
+    setClasses((prev) => prev.map((c) => c.id === id ? { ...updatedClass, id } : c));
+    return { ok: true, newClass: { ...updatedClass, id } };
   };
 
   const deleteClass = (id) => {
-    const newClasses = classes.filter(c => c.id !== id);
-    setClasses(newClasses);
-    saveToLocalStorage('rubato_classes', newClasses);
+    setClasses((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const removeStudentFromClass = (classId, studentId, studentName = '') => {
+    const numericId = Number(studentId);
+    const studentRef = students.find((s) => s.id === numericId);
+    const studentFullName = studentRef ? getFullName(studentRef) : studentName;
+
+    setClasses((prev) => {
+      const cls = prev.find((c) => c.id === classId);
+      if (!cls) return prev;
+
+      const ids = cls.studentIds || [];
+      const names = cls.studentNames || [];
+
+      const matches = (id, name) =>
+        (ids.length > 0 && id === numericId) ||
+        (studentFullName && normalizeText(name) === normalizeText(studentFullName));
+
+      const newStudentNames = names.filter((name, i) => !matches(ids[i], name));
+      const newStudentIds = ids.filter((id, i) => !matches(id, names[i] || ''));
+
+      if (newStudentNames.length === 0) {
+        return prev.map((c) => c.id === classId
+          ? { ...c, studentNames: [], studentIds: [], studentName: '', studentId: undefined }
+          : c);
+      }
+
+      return prev.map((c) => c.id === classId ? {
+        ...c,
+        studentNames: newStudentNames,
+        studentIds: newStudentIds,
+        studentName: newStudentNames[0] || c.studentName,
+        studentId: c.studentId === numericId ? (newStudentIds[0] || c.studentId) : c.studentId,
+      } : c);
+    });
+
+    return { removed: true };
+  };
+
+  const checkClassConflict = (classData, excludeId) => {
+    const newTeacher = normalizeText(classData.teacherName || classData.profesor || classData.profesora || classData.director || '');
+    const newStart = toMinutes(classData.startTime);
+    const newEnd = toMinutes(classData.endTime);
+    if (!newTeacher || newStart === null || newEnd === null) return null;
+
+    const conflict = classes.find((c) => {
+      if (excludeId !== undefined && excludeId !== null && c.id === excludeId) return false;
+      const cTeacher = normalizeText(c.teacherName || c.profesor || c.profesora || c.director || '');
+      if (!cTeacher || cTeacher !== newTeacher) return false;
+      if (c.day !== classData.day) return false;
+      const cStart = toMinutes(c.startTime);
+      const cEnd = toMinutes(c.endTime);
+      if (cStart === null || cEnd === null) return false;
+      return newStart < cEnd && newEnd > cStart;
+    });
+
+    if (!conflict) return null;
+
+    const horario = conflict.horario ||
+      `${conflict.day || ''} ${conflict.startTime || ''} - ${conflict.endTime || ''}`.trim();
+    return {
+      conflict,
+      message: `Conflicto de horario: el docente ya tiene la clase "${conflict.subject || conflict.asignatura}" el día ${conflict.day || 'programado'} (horario actual: ${horario}).`
+    };
   };
 
   return (
@@ -200,6 +240,8 @@ export function DataManagerProvider({ children }) {
         admins,
         currentAdmin,
         classes,
+        loading,
+        refresh: fetchAll,
         addStudent,
         updateStudent,
         deleteStudent,
@@ -211,7 +253,10 @@ export function DataManagerProvider({ children }) {
         deleteAdmin,
         setCurrentAdmin,
         addClass,
+        updateClass,
         deleteClass,
+        removeStudentFromClass,
+        checkClassConflict,
       }}
     >
       {children}

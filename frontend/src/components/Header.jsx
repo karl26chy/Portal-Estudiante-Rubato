@@ -102,7 +102,7 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
-                {(user?.role === 'admin' || user?.role === 'professor') && (
+                {user?.role === 'professor' && (
                   <Link
                     to="/professor"
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
@@ -114,16 +114,18 @@ export default function Header() {
                     Docente
                   </Link>
                 )}
-                <Link
-                  to="/student"
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                    location.pathname === '/student'
-                      ? 'bg-[#6b0060] text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  Estudiante
-                </Link>
+                {user?.role === 'student' && (
+                  <Link
+                    to="/student"
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                      location.pathname === '/student'
+                        ? 'bg-[#6b0060] text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Estudiante
+                  </Link>
+                )}
               </nav>
 
               <button
@@ -160,33 +162,39 @@ export default function Header() {
           )}
 
           <nav className="flex flex-col gap-1.5">
-            <Link
-              to="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
-                location.pathname === '/admin' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              Panel Admin
-            </Link>
-            <Link
-              to="/professor"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
-                location.pathname === '/professor' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              Panel Docente
-            </Link>
-            <Link
-              to="/student"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
-                location.pathname === '/student' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              Panel Estudiante
-            </Link>
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
+                  location.pathname === '/admin' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Panel Admin
+              </Link>
+            )}
+            {user?.role === 'professor' && (
+              <Link
+                to="/professor"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
+                  location.pathname === '/professor' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Panel Docente
+              </Link>
+            )}
+            {user?.role === 'student' && (
+              <Link
+                to="/student"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 text-xs font-semibold rounded-xl text-center transition-all ${
+                  location.pathname === '/student' ? 'bg-[#6b0060] text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                Panel Estudiante
+              </Link>
+            )}
           </nav>
 
           {activeUser && (

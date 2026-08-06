@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `classes` (
   `semestre` VARCHAR(50) DEFAULT 'Módulo 1-1',
   `profesor_nombre` VARCHAR(150) NOT NULL,
   `profesor_titulo` VARCHAR(50) DEFAULT 'profesor',
+  `dia_semana` VARCHAR(15) NULL,
   `horario` VARCHAR(100) NOT NULL,
   `hora_inicio` TIME NULL,
   `hora_fin` TIME NULL,
@@ -37,6 +38,24 @@ CREATE TABLE IF NOT EXISTS `classes` (
   `asistencia` VARCHAR(20) DEFAULT '100%',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- -----------------------------------------------------
+-- Migración para BD existente:
+-- ALTER TABLE `classes` ADD COLUMN `dia_semana` VARCHAR(15) NULL;
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Table `clase_estudiantes` (Relación muchos-a-muchos classes ↔ users)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `clase_estudiantes` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `clase_id` INT NOT NULL,
+  `estudiante_id` INT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_clase_estudiante` (`clase_id`, `estudiante_id`),
+  CONSTRAINT `fk_ce_clase` FOREIGN KEY (`clase_id`) REFERENCES `classes`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ce_estudiante` FOREIGN KEY (`estudiante_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
 -- Seed Data
@@ -60,3 +79,37 @@ INSERT INTO `classes` (`id`, `asignatura`, `profesor_nombre`, `profesor_titulo`,
 (102, 'Teoría y Solfeo Avanzado', 'Dra. María Fernández', 'profesora', 'Martes y Jueves 02:00 - 04:00 PM', 'Auditorio Principal', '4.5', '90%'),
 (103, 'Ensayo de Orquesta Filarmónica', 'Maestro Carlos Silva', 'director', 'Viernes 03:00 - 06:00 PM', 'Teatro Rubato', '5.0', '100%')
 ON DUPLICATE KEY UPDATE `asignatura`=`asignatura`;
+
+-- Datos Semilla para clase_estudiantes (estudiantes id 5 y 6 inscritos en las clases 101-103)
+INSERT IGNORE INTO `clase_estudiantes` (`clase_id`, `estudiante_id`) VALUES
+(101, 5),
+(101, 6),
+(102, 5),
+(103, 6);
+
+-- -----------------------------------------------------
+-- Table `attendance` (Registro de asistencia por clase, alumno y fecha)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `attendance` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `class_id` BIGINT NOT NULL,
+  `student_name` VARCHAR(150) NOT NULL,
+  `fecha` DATE NOT NULL,
+  `asistencia` ENUM('P', 'A') NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_attendance` (`class_id`, `student_name`, `fecha`)
+);
+
+-- -----------------------------------------------------
+-- Table `grades` (Calificaciones Rubato: Corte 1 y Corte 2 al 50%)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `grades` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `class_id` BIGINT NOT NULL,
+  `student_name` VARCHAR(150) NOT NULL,
+  `corte1` DECIMAL(3,1) NULL,
+  `corte2` DECIMAL(3,1) NULL,
+  `nota_final` DECIMAL(3,1) NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_grade` (`class_id`, `student_name`)
+);

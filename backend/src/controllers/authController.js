@@ -26,6 +26,7 @@ async function login(req, res) {
         id: user.id,
         usuario: user.usuario,
         nombre: user.nombre,
+        apellido: user.apellido,
         role: user.role
       }
     });
@@ -104,10 +105,73 @@ async function getCredentials(req, res) {
   }
 }
 
+// PUT /api/auth/user/:id (Solo ADMIN)
+async function updateUser(req, res) {
+  try {
+    const id = req.params.id;
+    const result = await authService.updateUser(id, req.body);
+
+    return res.json({
+      message: 'Usuario actualizado exitosamente',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error en updateUser:', error);
+    if (error.message === 'Usuario no encontrado.') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'El correo electrónico ya está en uso por otro usuario.'
+      || error.message === 'Rol inválido. Debe ser ADMIN, DOCENTE o ESTUDIANTE.'
+      || error.message === 'ID de usuario requerido para la actualización.') {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Error interno al actualizar el usuario.' });
+  }
+}
+
+// DELETE /api/auth/user/:id (Solo ADMIN)
+async function deleteUser(req, res) {
+  try {
+    const id = req.params.id;
+    const result = await authService.deleteUser(id);
+
+    return res.json({
+      message: 'Usuario eliminado exitosamente',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error en deleteUser:', error);
+    if (error.message === 'Usuario no encontrado.') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'ID de usuario requerido para la eliminación.') {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Error interno al eliminar el usuario.' });
+  }
+}
+
+// GET /api/auth/users?role=DOCENTE|ESTUDIANTE|ADMIN (Solo ADMIN)
+async function getUsersByRole(req, res) {
+  try {
+    const users = await authService.getUsersByRole(req.query.role);
+    return res.json({ users });
+  } catch (error) {
+    console.error('Error en getUsersByRole:', error);
+    if (error.message.startsWith('Rol inválido')) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Error interno al obtener usuarios.' });
+  }
+}
+
 module.exports = {
   login,
   logout,
   getMe,
   register,
-  getCredentials
+  getCredentials,
+  updateUser,
+  deleteUser,
+  getUsersByRole
 };

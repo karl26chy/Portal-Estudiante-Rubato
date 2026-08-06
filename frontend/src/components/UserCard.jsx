@@ -89,6 +89,7 @@ export default function UserCard({
           <div className="min-w-0">
             <p className="font-bold text-slate-800 truncate">{name}</p>
             {badge && <div className="mt-0.5">{badge}</div>}
+            {subtitle && <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>}
           </div>
         </div>
       </div>

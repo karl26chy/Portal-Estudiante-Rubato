@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const classRoutes = require('./routes/classRoutes');
+const academicRoutes = require('./routes/academicRoutes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 // Rutas de API REST
 app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/academic', academicRoutes);
 
 // Ruta de prueba (Health Check)
 app.get('/api/health', (req, res) => {

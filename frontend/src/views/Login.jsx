@@ -25,7 +25,7 @@ export default function Login() {
     try {
       setSubmitting(true);
       setErrorMessage('');
-      const loggedUser = await login(usuario.trim(), password);
+      const loggedUser = await login(usuario.trim(), password.trim());
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Credenciales no válidas.');
