@@ -130,27 +130,6 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         age: Number(formData.age),
       };
 
-      if (!initialData) {
-        const firstName = formData.nombre
-          .trim()
-          .split(' ')[0]
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]/g, '');
-
-        const randomNum = Math.floor(10 + Math.random() * 90);
-        const username = `${firstName}.rubato${randomNum}`;
-        const autoPassword = `Rubato${Math.floor(1000 + Math.random() * 9000)}!`;
-
-        studentPayload.username = username;
-        studentPayload.password = autoPassword;
-        studentPayload.credentials = {
-          usuario: username,
-          password: autoPassword,
-        };
-      }
-
       onSubmit(studentPayload);
       if (!initialData) {
         setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
