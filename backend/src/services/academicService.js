@@ -9,14 +9,14 @@ const calcNotaFinal = (corte1, corte2) => {
 
 async function resolveEstudianteId(studentName) {
   if (!studentName) return null;
-  const [rows] = await pool.query(
+  const result = await pool.query(
     `SELECT id FROM users
      WHERE role = 'ESTUDIANTE'
-       AND LOWER(CONCAT(nombre, ' ', apellido)) = LOWER(?)
+       AND LOWER(nombre || ' ' || apellido) = LOWER($1)
      LIMIT 1`,
     [studentName.trim()]
   );
-  return rows[0] ? rows[0].id : null;
+  return result.rows[0] ? result.rows[0].id : null;
 }
 
 async function getAttendance({ classId, studentName, estudianteId }) {

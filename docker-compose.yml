@@ -8,28 +8,4 @@ services:
       - "5001:5000"
     env_file:
       - .env.docker
-    depends_on:
-      mysql:
-        condition: service_healthy
     restart: unless-stopped
-
-  mysql:
-    image: mysql:8.0
-    container_name: rubato-mysql
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rubato_secret}
-      MYSQL_DATABASE: ${DB_NAME:-rubato_db}
-    volumes:
-      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-volumes:
-  mysql_data:

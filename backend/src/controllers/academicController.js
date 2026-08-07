@@ -4,24 +4,24 @@ const { pool } = require('../config/db');
 
 async function verifyDocenteOwnsClass(classId, userId) {
   if (!classId || !userId) return false;
-  const [rows] = await pool.query(
-    'SELECT id FROM classes WHERE id = ? AND docente_id = ? LIMIT 1',
+  const result = await pool.query(
+    'SELECT id FROM classes WHERE id = $1 AND docente_id = $2 LIMIT 1',
     [classId, userId]
   );
-  return rows.length > 0;
+  return result.rows.length > 0;
 }
 
 async function verifyCicloAbierto(classId) {
   if (!classId) return false;
-  const [rows] = await pool.query(
-    `SELECT (ci.estado = 'ABIERTO' AND ci.fecha_fin >= CURDATE()) AS is_open
+  const result = await pool.query(
+    `SELECT (ci.estado = 'ABIERTO' AND ci.fecha_fin >= CURRENT_DATE) AS is_open
      FROM classes c
      JOIN ciclos ci ON ci.id = c.ciclo_id
-     WHERE c.id = ? LIMIT 1`,
+     WHERE c.id = $1 LIMIT 1`,
     [classId]
   );
-  if (!rows[0]) return false;
-  return Boolean(rows[0].is_open);
+  if (!result.rows[0]) return false;
+  return Boolean(result.rows[0].is_open);
 }
 
 async function getAttendance(req, res) {

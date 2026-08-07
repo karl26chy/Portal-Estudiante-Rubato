@@ -1,24 +1,18 @@
-// config/db.js - Conexión a la base de datos MySQL
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-// Crear el pool de conexiones
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'rubato_db',
-  port: process.env.DB_PORT || 3306
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
-// Función para verificar la conexión
 async function testConnection() {
   try {
-    const connection = await pool.getConnection();
-    console.log('✅ Conexión exitosa a MySQL');
-    connection.release();
+    const client = await pool.connect();
+    console.log('\u2705 Conexión exitosa a PostgreSQL (Supabase)');
+    client.release();
   } catch (error) {
-    console.error('❌ Error de conexión a MySQL:', error.message);
+    console.error('\u274C Error de conexión a PostgreSQL:', error.message);
   }
 }
 
