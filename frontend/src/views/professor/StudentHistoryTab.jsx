@@ -12,6 +12,7 @@ export default function StudentHistoryTab() {
 
   const [classes, setClasses] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
+  const [studentsByClass, setStudentsByClass] = useState({});
   const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStudentName, setSelectedStudentName] = useState('');
@@ -38,33 +39,49 @@ export default function StudentHistoryTab() {
     if (classes.length === 0) return;
     (async () => {
       const studentMap = new Map();
+      const byClass = {};
       for (const cls of classes) {
         try {
           const res = await fetch(`/api/classes/${cls.id}/students`, { credentials: 'include' });
           if (!res.ok) continue;
           const data = await res.json();
-          (data.students || []).forEach((s) => {
+          const classStudents = (data.students || []).map((s) => {
             const name = `${(s.nombre || '')} ${(s.apellido || '')}`.trim();
-            if (!studentMap.has(name)) {
-              studentMap.set(name, { id: s.id, name, nombre: s.nombre, apellido: s.apellido, email: s.email });
-            }
+            return { id: s.id, name, nombre: s.nombre, apellido: s.apellido, email: s.email };
+          });
+          byClass[cls.id] = sortByLastName(classStudents);
+          classStudents.forEach((s) => {
+            if (!studentMap.has(s.name)) studentMap.set(s.name, s);
           });
         } catch {}
       }
+      setStudentsByClass(byClass);
       setAllStudents(sortByLastName([...studentMap.values()]));
     })();
   }, [classes]);
 
-  const selectedStudent = allStudents.find((s) => s.name === selectedStudentName) || null;
+  const activeCycleClasses = classes.filter(c =>
+    c.ciclo_abierto !== false && c.ciclo_estado !== 'CERRADO'
+  );
+  const displayedStudents = selectedClassId && studentsByClass[selectedClassId]
+    ? studentsByClass[selectedClassId]
+    : allStudents;
+
+  const selectedStudent = displayedStudents.find((s) => s.name === selectedStudentName) || null;
   const filteredClasses = selectedClassId
     ? classes.filter((c) => c.id === Number(selectedClassId))
     : classes;
 
   useEffect(() => {
-    if (allStudents.length > 0 && !selectedStudentName) {
-      setSelectedStudentName(allStudents[0].name);
+    if (displayedStudents.length === 0) {
+      if (selectedStudentName) setSelectedStudentName('');
+      return;
     }
-  }, [allStudents, selectedStudentName]);
+    const found = displayedStudents.find(s => s.name === selectedStudentName);
+    if (!found) {
+      setSelectedStudentName(displayedStudents[0].name);
+    }
+  }, [displayedStudents, selectedStudentName]);
 
   useEffect(() => {
     if (!selectedStudentName) return;
@@ -104,7 +121,7 @@ export default function StudentHistoryTab() {
 
   const classNameById = (classId) => {
     const cls = classes.find((c) => c.id === classId);
-    return cls ? cls.asignatura : `Clase #${classId}`;
+    return cls ? `${cls.asignatura} — ${cls.semestre}` : `Clase #${classId}`;
   };
 
   const metrics = useMemo(() => {
@@ -157,7 +174,7 @@ export default function StudentHistoryTab() {
           icon={CalendarCheck}
           options={[
             { value: '', label: '— Todas las clases —' },
-            ...filteredClasses.map((c) => ({ value: String(c.id), label: c.asignatura }))
+            ...activeCycleClasses.map((c) => ({ value: String(c.id), label: `${c.asignatura} — ${c.semestre}` }))
           ]}
         />
       </div>
@@ -170,7 +187,7 @@ export default function StudentHistoryTab() {
           value={selectedStudentName}
           onChange={(e) => setSelectedStudentName(e.target.value)}
           icon={GraduationCap}
-          options={allStudents.map((s) => ({ value: s.name, label: `${s.name}` }))}
+          options={displayedStudents.map((s) => ({ value: s.name, label: `${s.name}` }))}
         />
         {selectedStudent && (
           <p className="text-xs text-slate-500 mt-2">

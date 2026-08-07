@@ -7,14 +7,14 @@ import StudentForm from '../../components/forms/StudentForm';
 import TeacherForm from '../../components/forms/TeacherForm';
 import AdminForm from '../../components/forms/AdminForm';
 import ClassForm, { formatTime12h } from '../../components/forms/ClassForm';
-import ClassCard from '../../components/ClassCard';
+import CycleForm from '../../components/forms/CycleForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
 import { useToast } from '../../components/Toast';
 import { getLastName, getFullName } from '../../utils/teacherUtils';
 import * as authApi from '../../api/authApi';
-import { Shield, UserCheck, Copy, Check, X, Pencil, Sparkles, Eye, EyeOff, BookOpen, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, UserCheck, Copy, Check, X, Pencil, Sparkles, Eye, EyeOff, BookOpen, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('students');
@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [removeStudentDialog, setRemoveStudentDialog] = useState(null);
 
   const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [classFilterCycle, setClassFilterCycle] = useState('');
 
   const togglePasswordVisibility = (id) => {
     setVisiblePasswords(prev => ({
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
     admins,
     currentAdmin,
     classes,
+    cycles,
     loading,
     refresh,
     addStudent,
@@ -53,6 +55,10 @@ export default function AdminDashboard() {
     addAdmin,
     updateAdmin,
     deleteAdmin,
+    addCycle,
+    updateCycle,
+    closeCycle,
+    deleteCycle,
     setCurrentAdmin,
     addClass,
     updateClass,
@@ -179,8 +185,36 @@ export default function AdminDashboard() {
     setEditingItem(null);
   };
 
+  const handleCycleSubmit = async (data) => {
+    if (editingItem) {
+      try {
+        await updateCycle(editingItem.id, data);
+        addToast(`Ciclo "${data.nombre}" actualizado correctamente`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+        return;
+      }
+    } else {
+      try {
+        await addCycle(data);
+        addToast(`Ciclo "${data.nombre}" creado correctamente`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+      }
+    }
+    setEditingItem(null);
+  };
+
   const handleDeleteClass = (classItem) => {
     setConfirmDialog({ isOpen: true, item: classItem, type: 'class' });
+  };
+
+  const handleCloseCyclePrompt = (cycleItem) => {
+    setConfirmDialog({ isOpen: true, item: cycleItem, type: 'cycle' });
+  };
+
+  const handleDeleteCyclePrompt = (cycleItem) => {
+    setConfirmDialog({ isOpen: true, item: cycleItem, type: 'deleteCycle' });
   };
 
   const handleDeleteStudent = (student) => {
@@ -213,9 +247,15 @@ export default function AdminDashboard() {
       } else if (type === 'class') {
         await deleteClass(item.id);
         addToast(`Clase de "${item.subject}" eliminada`, 'warning');
+      } else if (type === 'cycle') {
+        await closeCycle(item.id);
+        addToast(`Ciclo "${item.nombre}" cerrado exitosamente`, 'warning');
+      } else if (type === 'deleteCycle') {
+        await deleteCycle(item.id);
+        addToast(`Ciclo "${item.nombre}" y todos sus datos fueron eliminados definitivamente`, 'warning');
       }
     } catch (err) {
-      addToast(`Error al eliminar: ${err.message}`, 'error');
+      addToast(`Error: ${err.message}`, 'error');
     }
     setConfirmDialog({ isOpen: false, item: null, type: null });
   };
@@ -229,10 +269,15 @@ export default function AdminDashboard() {
     setStudentClassesModal({ student, studentName, classes: studentClasses });
   };
 
-  const handleRemoveStudentFromClass = (classId, student, e) => {
+  const handleRemoveStudentFromClass = async (classId, student, e) => {
     e.stopPropagation();
-    removeStudentFromClass(classId, student.id, getFullName(student));
-    addToast(`"${getFullName(student)}" removido de la clase`, 'info');
+    const studentName = getFullName(student);
+    try {
+      await removeStudentFromClass(classId, student.id, studentName);
+      addToast(`"${studentName}" desvinculado de la clase`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
   };
 
   const openRemoveStudentDialog = (classId, student) => {
@@ -321,7 +366,7 @@ export default function AdminDashboard() {
       label: 'Celular',
       render: (val, row) => (
         <span className="text-slate-700 text-xs font-medium">
-          {val || row.celular || '3001234567'}
+          {val || row.celular || '—'}
         </span>
       )
     },
@@ -407,6 +452,14 @@ export default function AdminDashboard() {
                   setEditingItem(null);
                 }}
               />
+              <TabButton
+                label="5. Ciclos Académicos"
+                isActive={activeTab === 'cycles'}
+                onClick={() => {
+                  setActiveTab('cycles');
+                  setEditingItem(null);
+                }}
+              />
             </div>
           </div>
 
@@ -418,6 +471,7 @@ export default function AdminDashboard() {
                 {activeTab === 'teachers' && (editingItem ? 'Editar Docente' : 'Registrar Docente')}
                 {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (SuperAdmin)')}
                 {activeTab === 'classes' && (editingItem ? 'Editar Clase' : 'Crear Nueva Clase (Exclusivo Administrador)')}
+                {activeTab === 'cycles' && (editingItem ? 'Editar Ciclo Académico' : 'Crear Nuevo Ciclo Académico')}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
                 {activeTab === 'students' && (
@@ -446,6 +500,14 @@ export default function AdminDashboard() {
                     initialData={editingItem}
                     onSubmit={handleClassSubmit}
                     onCancel={editingItem ? cancelEdit : undefined}
+                    onNavigateToCycles={() => setActiveTab('cycles')}
+                  />
+                )}
+                {activeTab === 'cycles' && (
+                  <CycleForm
+                    initialData={editingItem}
+                    onSubmit={handleCycleSubmit}
+                    onCancel={editingItem ? cancelEdit : undefined}
                   />
                 )}
               </div>
@@ -457,6 +519,7 @@ export default function AdminDashboard() {
                 {activeTab === 'teachers' && 'Directorio de Docentes'}
                 {activeTab === 'admins' && 'Administradores Registrados (SuperAdmin)'}
                 {activeTab === 'classes' && 'Clases Creadas y Programadas'}
+                {activeTab === 'cycles' && 'Ciclos Académicos Registrados'}
               </h2>
 
               {activeTab === 'students' && (
@@ -526,6 +589,25 @@ export default function AdminDashboard() {
 
               {activeTab === 'classes' && (
                 <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
+                  {classes.length > 0 && cycles.length > 0 && (
+                    <div className="mb-4">
+                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                        Filtrar por ciclo
+                      </label>
+                      <select
+                        value={classFilterCycle}
+                        onChange={(e) => setClassFilterCycle(e.target.value)}
+                        className="w-full max-w-xs px-3.5 py-2 rounded-xl bg-white text-slate-700 font-medium text-sm border border-slate-300 focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 cursor-pointer"
+                      >
+                        <option value="">Todos los ciclos</option>
+                        {cycles.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre} ({c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false) ? 'ABIERTO' : 'CERRADO'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {classes.length === 0 ? (
                     <div className="text-center py-10 text-slate-500">
                       <BookOpen className="w-12 h-12 mx-auto mb-2 text-slate-300" />
@@ -533,7 +615,9 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {classes.map((cls) => {
+                      {classes
+                        .filter(cls => !classFilterCycle || Number(cls.ciclo_id) === Number(classFilterCycle) || Number(cls.cicloId) === Number(classFilterCycle))
+                        .map((cls) => {
                         const isExpanded = expandedClassId === cls.id;
                         const enrolledStudents = (cls.studentNames || [])
                           .map(name => {
@@ -559,9 +643,14 @@ export default function AdminDashboard() {
                                 className="flex-1 min-w-0 text-left cursor-pointer group"
                                 title={isExpanded ? 'Cerrar detalle' : 'Ver estudiantes de la clase'}
                               >
-                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-[#6b0060] mb-1">
-                                  {cls.module || 'Módulo Pénsum'} {cls.semester ? `• ${cls.semester}` : ''}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-[#6b0060]">
+                                    {cls.module || 'Módulo Pénsum'} {cls.semester ? `• ${cls.semester}` : ''}
+                                  </span>
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                    {cls.cicloNombre || cls.ciclo_nombre || 'Ciclo'}
+                                  </span>
+                                </div>
                                 <h3 className="font-bold text-slate-900 text-base break-words">{cls.subject}</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-slate-500 mt-1.5">
                                   <p><strong className="text-slate-600">Docente:</strong> {cls.teacherName || cls.profesor || 'Por asignar'}</p>
@@ -639,6 +728,75 @@ export default function AdminDashboard() {
                                 )}
                               </div>
                             )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'cycles' && (
+                <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
+                  {cycles.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500">
+                      <Layers className="w-12 h-12 mx-auto mb-2 text-slate-300" />
+                      <p>No hay ciclos académicos registrados aún.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {cycles.map((c) => {
+                        const isOpen = c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false);
+                        return (
+                          <div
+                            key={c.id}
+                            className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-purple-200 transition-colors shadow-sm"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h3 className="font-bold text-slate-900 text-base">{c.nombre}</h3>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                  isOpen ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                }`}>
+                                  {isOpen ? 'ABIERTO' : 'CERRADO'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 font-medium">
+                                <strong>Vigencia:</strong> {String(c.fecha_inicio).substring(0, 10)} al {String(c.fecha_fin).substring(0, 10)}
+                              </p>
+                              {c.cerrado_en && (
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  Cerrado el {String(c.cerrado_en).substring(0, 10)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isOpen && (
+                                <button
+                                  onClick={() => setEditingItem(c)}
+                                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                  Editar
+                                </button>
+                              )}
+                              {isOpen && (
+                                <button
+                                  onClick={() => handleCloseCyclePrompt(c)}
+                                  className="px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  Cerrar Ciclo
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDeleteCyclePrompt(c)}
+                                className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                title="Eliminar definitivamente todos los datos del ciclo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Eliminar datos del ciclo
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -818,7 +976,11 @@ export default function AdminDashboard() {
             ? `¿Está seguro de eliminar al docente "${getFullName(confirmDialog.item)}"?`
             : confirmDialog.type === 'class'
             ? `¿Está seguro de eliminar la clase "${confirmDialog.item?.subject || confirmDialog.item?.asignatura}"?`
-            : `¿Está seguro de eliminar al administrador (SuperAdmin) "${getFullName(confirmDialog.item)}"?`
+            : confirmDialog.type === 'cycle'
+            ? `¿Está seguro de cerrar el ciclo "${confirmDialog.item?.nombre}"? Sus datos se conservarán como registro histórico.`
+            : confirmDialog.type === 'deleteCycle'
+            ? `Estás a punto de eliminar todos los datos asociados a este ciclo ("${confirmDialog.item?.nombre}"). Esta acción eliminará las clases, horarios, registros y demás información relacionada con este ciclo y no podrá recuperarse. ¿Estás seguro de que deseas continuar?`
+            : `¿Está seguro de eliminar al administrador "${getFullName(confirmDialog.item)}"?`
         }
       />
 

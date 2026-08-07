@@ -4,6 +4,7 @@ import Footer from '../../components/Footer';
 import TabButton from '../../components/TabButton';
 import AgendaTab from './AgendaTab';
 import StudentHistoryTab from './StudentHistoryTab';
+import TeacherHistoryTab from './TeacherHistoryTab';
 import { useAuth } from '../../context/AuthContext';
 import { UserCheck } from 'lucide-react';
 import { getFullName } from '../../utils/teacherUtils';
@@ -55,13 +56,20 @@ export default function TeacherDashboard() {
                 isActive={activeTab === 'dashboard'}
                 onClick={() => setActiveTab('dashboard')}
               />
+              <TabButton
+                label="Registros de Ciclos (Histórico)"
+                isActive={activeTab === 'cycleHistory'}
+                onClick={() => setActiveTab('cycleHistory')}
+              />
             </div>
           </div>
 
           {activeTab === 'agenda' ? (
             <AgendaTab />
-          ) : (
+          ) : activeTab === 'dashboard' ? (
             <StudentHistoryTab />
+          ) : (
+            <TeacherHistoryTab />
           )}
 
         </div>

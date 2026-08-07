@@ -104,6 +104,7 @@ async function registerUser(userData) {
     instrument: isStudent ? (userData.instrument || null) : null,
     module: isStudent ? (userData.module || null) : null,
     semester: isStudent ? (userData.semester || null) : null,
+    phone: userData.phone || null,
     password_hash,
     password_encrypted
   };

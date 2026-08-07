@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, ClipboardCheck, GraduationCap, Save, ChevronRight, Loader } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import FormField from '../../components/forms/FormField';
@@ -37,7 +37,7 @@ export default function AgendaTab() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/classes', { credentials: 'include' });
+        const res = await fetch('/api/classes?activeOnly=true', { credentials: 'include' });
         if (!res.ok) throw new Error('Error al cargar clases');
         const data = await res.json();
         setClasses(data.classes || []);
@@ -49,11 +49,15 @@ export default function AgendaTab() {
     })();
   }, []);
 
-  const dayClasses = classes.filter((c) => c.dia_semana === selectedDay);
-  const selectedClass = classes.find((c) => c.id === selectedClassId) || null;
+  const activeClasses = useMemo(() => {
+    return classes.filter((c) => c.ciclo_abierto !== false && c.ciclo_estado !== 'CERRADO' && c.cicloEstado !== 'CERRADO');
+  }, [classes]);
+
+  const dayClasses = activeClasses.filter((c) => c.dia_semana === selectedDay);
+  const selectedClass = activeClasses.find((c) => c.id === selectedClassId) || null;
   const enrolled = students[selectedClassId] || [];
 
-  const countByDay = (day) => classes.filter((c) => c.dia_semana === day).length;
+  const countByDay = (day) => activeClasses.filter((c) => c.dia_semana === day).length;
 
   useEffect(() => {
     if (!selectedClassId) {
@@ -261,7 +265,7 @@ export default function AgendaTab() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-800 text-sm truncate">{cls.asignatura}</p>
+                        <p className="font-bold text-slate-800 text-sm truncate">{cls.asignatura} — {cls.semestre}</p>
                         <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-[#6b0060]" />
                           {cls.horario || `${cls.dia_semana} ${time}`}
@@ -297,8 +301,15 @@ export default function AgendaTab() {
               </div>
             ) : (
               <>
+                {selectedClass && (selectedClass.ciclo_abierto === false || selectedClass.cicloAbierto === false || selectedClass.ciclo_estado === 'CERRADO' || selectedClass.cicloEstado === 'CERRADO') && (
+                  <div className="mb-4 p-3 bg-slate-100 border border-slate-300 rounded-xl flex items-center gap-2 text-slate-700 text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span>Este ciclo académico está cerrado — solo lectura.</span>
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-500 font-medium mb-3">
-                  {selectedClass.asignatura} — {enrolled.length} estudiante(s)
+                  {selectedClass.asignatura} — {selectedClass.semestre} — {enrolled.length} estudiante(s) {selectedClass.cicloNombre ? `(${selectedClass.cicloNombre})` : ''}
                 </p>
 
                 <div className="space-y-4">
@@ -307,6 +318,7 @@ export default function AgendaTab() {
                     const present = attendanceMap[key] !== 'A';
                     const g = gradesMap[key] || {};
                     const notaFinal = calcNotaFinal(g.corte1, g.corte2);
+                    const isClosed = selectedClass && (selectedClass.ciclo_abierto === false || selectedClass.cicloAbierto === false || selectedClass.ciclo_estado === 'CERRADO' || selectedClass.cicloEstado === 'CERRADO');
                     return (
                       <div key={key} className="p-4 rounded-xl border border-slate-200 space-y-3">
                         <div className="flex items-start justify-between gap-3">
@@ -324,21 +336,27 @@ export default function AgendaTab() {
                             <ClipboardCheck className="w-3.5 h-3.5 text-[#6b0060]" /> Asistencia
                           </span>
                           <button
-                            onClick={() => toggleAttendance(key, 'P')}
-                            className={`px-3 py-1 text-[11px] font-semibold rounded-lg border transition-colors cursor-pointer ${
-                              present
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-white text-slate-600 border-slate-300 hover:border-emerald-400'
+                            onClick={() => !isClosed && toggleAttendance(key, 'P')}
+                            disabled={isClosed}
+                            className={`px-3 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
+                              isClosed
+                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                : present
+                                  ? 'bg-emerald-600 text-white border-emerald-600 cursor-pointer'
+                                  : 'bg-white text-slate-600 border-slate-300 hover:border-emerald-400 cursor-pointer'
                             }`}
                           >
                             Presente
                           </button>
                           <button
-                            onClick={() => toggleAttendance(key, 'A')}
-                            className={`px-3 py-1 text-[11px] font-semibold rounded-lg border transition-colors cursor-pointer ${
-                              !present
-                                ? 'bg-rose-600 text-white border-rose-600'
-                                : 'bg-white text-slate-600 border-slate-300 hover:border-rose-400'
+                            onClick={() => !isClosed && toggleAttendance(key, 'A')}
+                            disabled={isClosed}
+                            className={`px-3 py-1 text-[11px] font-semibold rounded-lg border transition-colors ${
+                              isClosed
+                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                : !present
+                                  ? 'bg-rose-600 text-white border-rose-600 cursor-pointer'
+                                  : 'bg-white text-slate-600 border-slate-300 hover:border-rose-400 cursor-pointer'
                             }`}
                           >
                             Ausente
@@ -355,9 +373,10 @@ export default function AgendaTab() {
                               min="1"
                               max="5"
                               step="0.1"
+                              disabled={isClosed}
                               value={g.corte1 ?? ''}
                               onChange={(e) => handleGradeChange(key, 'corte1', e.target.value)}
-                              className="w-full min-w-0 px-2.5 py-1.5 text-sm font-medium text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20"
+                              className="w-full min-w-0 px-2.5 py-1.5 text-sm font-medium text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                               placeholder="1.0 - 5.0"
                             />
                           </div>
@@ -370,9 +389,10 @@ export default function AgendaTab() {
                               min="1"
                               max="5"
                               step="0.1"
+                              disabled={isClosed}
                               value={g.corte2 ?? ''}
                               onChange={(e) => handleGradeChange(key, 'corte2', e.target.value)}
-                              className="w-full min-w-0 px-2.5 py-1.5 text-sm font-medium text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20"
+                              className="w-full min-w-0 px-2.5 py-1.5 text-sm font-medium text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                               placeholder="1.0 - 5.0"
                             />
                           </div>
@@ -400,20 +420,21 @@ export default function AgendaTab() {
                     value={attendanceDate}
                     onChange={(e) => setAttendanceDate(e.target.value)}
                     icon={Calendar}
+                    disabled={selectedClass && (selectedClass.ciclo_abierto === false || selectedClass.cicloAbierto === false || selectedClass.ciclo_estado === 'CERRADO' || selectedClass.cicloEstado === 'CERRADO')}
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       onClick={handleSaveAttendance}
-                      disabled={savingAttendance}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                      disabled={savingAttendance || Boolean(selectedClass && (selectedClass.ciclo_abierto === false || selectedClass.cicloAbierto === false || selectedClass.ciclo_estado === 'CERRADO' || selectedClass.cicloEstado === 'CERRADO'))}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="w-4 h-4" />
                       <span>{savingAttendance ? 'Guardando...' : `Guardar Asistencia (${formatFecha(attendanceDate)})`}</span>
                     </button>
                     <button
                       onClick={handleSaveGrades}
-                      disabled={savingGrades}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                      disabled={savingGrades || Boolean(selectedClass && (selectedClass.ciclo_abierto === false || selectedClass.cicloAbierto === false || selectedClass.ciclo_estado === 'CERRADO' || selectedClass.cicloEstado === 'CERRADO'))}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <GraduationCap className="w-4 h-4" />
                       <span>{savingGrades ? 'Guardando...' : 'Guardar Notas'}</span>

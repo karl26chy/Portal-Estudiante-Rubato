@@ -21,7 +21,6 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
     nombre: '',
     apellido: '',
     email: '',
-    role: 'SuperAdmin',
   });
   const [errors, setErrors] = useState({});
 
@@ -32,10 +31,9 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
         nombre,
         apellido,
         email: initialData.email || '',
-        role: 'SuperAdmin',
       });
     } else {
-      setFormData({ nombre: '', apellido: '', email: '', role: 'SuperAdmin' });
+      setFormData({ nombre: '', apellido: '', email: '' });
     }
   }, [initialData]);
 
@@ -58,9 +56,9 @@ export default function AdminForm({ initialData, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit({ ...formData, role: 'SuperAdmin' });
+      onSubmit(formData);
       if (!initialData) {
-        setFormData({ nombre: '', apellido: '', email: '', role: 'SuperAdmin' });
+        setFormData({ nombre: '', apellido: '', email: '' });
       }
     }
   };

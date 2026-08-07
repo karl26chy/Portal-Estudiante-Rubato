@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { normalizeText } from '../utils/teacherUtils';
 import * as authApi from '../api/authApi';
 import * as classApi from '../api/classApi';
+import * as cycleApi from '../api/cycleApi';
 
 const DataManagerContext = createContext(null);
 
@@ -29,6 +30,7 @@ const mapUser = (u) => ({
   instrument: u.instrument || '',
   module: u.module || '',
   semester: u.semester || '',
+  phone: u.phone || u.celular || '',
   dbId: u.id
 });
 
@@ -51,6 +53,11 @@ const mapClass = (c) => ({
   nota: c.nota,
   asistencia: c.asistencia,
   docente_id: c.docente_id,
+  ciclo_id: c.ciclo_id,
+  cicloId: c.ciclo_id,
+  cicloNombre: c.ciclo_nombre,
+  cicloEstado: c.ciclo_estado,
+  cicloAbierto: c.ciclo_abierto !== undefined && c.ciclo_abierto !== null ? Boolean(c.ciclo_abierto) : true,
   studentIds: Array.isArray(c.studentIds) ? c.studentIds : [],
   studentNames: Array.isArray(c.studentNames) ? c.studentNames : []
 });
@@ -61,20 +68,23 @@ export function DataManagerProvider({ children }) {
   const [admins, setAdmins] = useState([]);
   const [currentAdmin, setCurrentAdminState] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [cycles, setCycles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
     try {
-      const [classesRes, studentsRes, teachersRes, adminsRes] = await Promise.all([
+      const [classesRes, studentsRes, teachersRes, adminsRes, cyclesRes] = await Promise.all([
         classApi.getClasses(),
         authApi.getUsersByRole('ESTUDIANTE'),
         authApi.getUsersByRole('DOCENTE'),
-        authApi.getUsersByRole('ADMIN')
+        authApi.getUsersByRole('ADMIN'),
+        cycleApi.getCycles().catch(() => ({ cycles: [] }))
       ]);
       setClasses((classesRes.classes || []).map(mapClass));
       setStudents((studentsRes.users || []).map(mapUser));
       setTeachers((teachersRes.users || []).map(mapUser));
       setAdmins((adminsRes.users || []).map(mapUser));
+      setCycles(cyclesRes.cycles || []);
     } catch {
       // silencioso — el admin ya ve toasts de error en sus handlers
     } finally {
@@ -105,7 +115,8 @@ export function DataManagerProvider({ children }) {
       age: studentData.age,
       instrument: studentData.instrument,
       module: studentData.module,
-      semester: studentData.semester
+      semester: studentData.semester,
+      phone: studentData.phone
     });
     await fetchAll();
     return result;
@@ -121,7 +132,8 @@ export function DataManagerProvider({ children }) {
       age: studentData.age,
       instrument: studentData.instrument,
       module: studentData.module,
-      semester: studentData.semester
+      semester: studentData.semester,
+      phone: studentData.phone
     });
     await fetchAll();
     return result;
@@ -148,13 +160,17 @@ export function DataManagerProvider({ children }) {
   };
 
   const updateTeacher = async (id, updatedTeacher) => {
-    const result = await authApi.updateUser(id, {
+    const spec = updatedTeacher.specialty || updatedTeacher.especialidad;
+    const payload = {
       nombre: updatedTeacher.nombre,
       apellido: updatedTeacher.apellido,
       email: updatedTeacher.email,
       role: 'DOCENTE',
-      especialidad: updatedTeacher.specialty
-    });
+    };
+    if (spec !== undefined && spec !== '') {
+      payload.especialidad = spec;
+    }
+    const result = await authApi.updateUser(id, payload);
     await fetchAll();
     return result;
   };
@@ -199,6 +215,30 @@ export function DataManagerProvider({ children }) {
     setCurrentAdminState({ ...adminObj, role: 'SuperAdmin' });
   };
 
+  const addCycle = async (cycleData) => {
+    const result = await cycleApi.createCycle(cycleData);
+    await fetchAll();
+    return result;
+  };
+
+  const updateCycle = async (id, cycleData) => {
+    const result = await cycleApi.updateCycle(id, cycleData);
+    await fetchAll();
+    return result;
+  };
+
+  const closeCycle = async (id) => {
+    const result = await cycleApi.closeCycle(id);
+    await fetchAll();
+    return result;
+  };
+
+  const deleteCycle = async (id) => {
+    const result = await cycleApi.deleteCycle(id);
+    await fetchAll();
+    return result;
+  };
+
   const addClass = async (classData) => {
     const studentDbIds = (classData.studentIds || []).map(id => {
       const found = students.find(s => s.id === id);
@@ -215,6 +255,7 @@ export function DataManagerProvider({ children }) {
       horario: classData.horario,
       teacherName: classData.teacherName,
       docente_id: classData.teacherId,
+      ciclo_id: classData.cicloId || classData.ciclo_id,
       studentNames: classData.studentNames,
       studentIds: studentDbIds
     });
@@ -238,6 +279,7 @@ export function DataManagerProvider({ children }) {
       horario: updatedClass.horario,
       teacherName: updatedClass.teacherName,
       docente_id: updatedClass.teacherId,
+      ciclo_id: updatedClass.cicloId || updatedClass.ciclo_id,
       studentNames: updatedClass.studentNames,
       studentIds: studentDbIds
     });
@@ -272,7 +314,12 @@ export function DataManagerProvider({ children }) {
     const newEnd = toMinutes(classData.endTime);
     if (!newTeacher || newStart === null || newEnd === null) return null;
 
-    const conflict = classes.find((c) => {
+    const activeClasses = classes.filter(c =>
+      c.cicloAbierto !== false &&
+      c.cicloEstado !== 'CERRADO'
+    );
+
+    const conflict = activeClasses.find((c) => {
       if (excludeId !== undefined && excludeId !== null && c.id === excludeId) return false;
       const cTeacher = normalizeText(c.teacherName || c.profesor || c.profesora || c.director || '');
       if (!cTeacher || cTeacher !== newTeacher) return false;
@@ -301,6 +348,7 @@ export function DataManagerProvider({ children }) {
         admins,
         currentAdmin,
         classes,
+        cycles,
         loading,
         refresh: fetchAll,
         addStudent,
@@ -312,6 +360,10 @@ export function DataManagerProvider({ children }) {
         addAdmin,
         updateAdmin,
         deleteAdmin,
+        addCycle,
+        updateCycle,
+        closeCycle,
+        deleteCycle,
         setCurrentAdmin,
         addClass,
         updateClass,
@@ -332,3 +384,4 @@ export function useDataManager() {
   }
   return context;
 }
+

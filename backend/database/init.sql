@@ -1,18 +1,22 @@
 -- database/init.sql
--- Script de inicialización de base de datos para Portal Estudiante Rubato
+-- Script consolidado de inicialización de base de datos para Portal Estudiante Rubato
 --
--- IMPORTANT:
--- A partir de ahora que el proyecto tiene una base de datos real en uso,
--- este archivo (init.sql) deja de poder editarse libremente cuando haya datos en producción.
--- Los próximos cambios de esquema deben ir en archivos nuevos dentro de
--- backend/database/migrations/, empezando de nuevo desde 001 (ej. 001_descripcion.sql),
--- y aplicarse manualmente contra la base de datos real en orden cronológico.
+-- Este archivo contiene la estructura completa y unificada para crear la base de datos
+-- desde cero en el orden correcto:
+-- 1. Base de datos `rubato_db`
+-- 2. Tabla `users` (con teléfono, especialidad y campos completos)
+-- 3. Tabla `ciclos` (con semestre, anio, fechas y estado)
+-- 4. Tabla `classes` (con docente_id y ciclo_id)
+-- 5. Tabla `clase_estudiantes` (relación muchos a muchos)
+-- 6. Tabla `attendance` (registros de asistencia)
+-- 7. Tabla `grades` (calificaciones de corte 1 y corte 2)
+-- 8. Datos Semilla indispensables (usuarios, ciclo inicial, clases y matrículas)
 
-CREATE DATABASE IF NOT EXISTS rubato_db;
-USE rubato_db;
+CREATE DATABASE IF NOT EXISTS `rubato_db`;
+USE `rubato_db`;
 
 -- -----------------------------------------------------
--- Table `users`
+-- 1. Table `users`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -21,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(150) NOT NULL UNIQUE,
   `username` VARCHAR(100) NOT NULL UNIQUE,
   `role` ENUM('ADMIN', 'DOCENTE', 'ESTUDIANTE') NOT NULL,
+  `phone` VARCHAR(20) NULL,
   `especialidad` VARCHAR(150) NULL,
   `birthdate` DATE NULL,
   `age` INT NULL,
@@ -32,76 +37,31 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Asegurar que las columnas de docente y estudiante existen en users (por si la tabla ya existía previamente)
-DROP PROCEDURE IF EXISTS AddStudentColumns;
-DELIMITER //
-CREATE PROCEDURE AddStudentColumns()
-BEGIN
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'especialidad'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `especialidad` VARCHAR(150) NULL AFTER `role`;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'birthdate'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `birthdate` DATE NULL AFTER `especialidad`;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'age'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `age` INT NULL AFTER `birthdate`;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'instrument'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `instrument` VARCHAR(100) NULL AFTER `age`;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'module'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `module` VARCHAR(50) NULL AFTER `instrument`;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema = DATABASE()
-      AND table_name = 'users' 
-      AND column_name = 'semester'
-  ) THEN
-    ALTER TABLE `users` ADD COLUMN `semester` VARCHAR(50) NULL AFTER `module`;
-  END IF;
-END //
-DELIMITER ;
-
-CALL AddStudentColumns();
-DROP PROCEDURE IF EXISTS AddStudentColumns;
+-- -----------------------------------------------------
+-- 2. Table `ciclos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `ciclos` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nombre` VARCHAR(100) NOT NULL,
+  `semestre` ENUM('1', '2') NULL,
+  `anio` SMALLINT NULL,
+  `fecha_inicio` DATE NOT NULL,
+  `fecha_fin` DATE NOT NULL,
+  `estado` ENUM('ABIERTO', 'CERRADO') NOT NULL DEFAULT 'ABIERTO',
+  `cerrado_en` TIMESTAMP NULL,
+  `cerrado_por` INT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_ciclos_estado` (`estado`),
+  CONSTRAINT `fk_ciclos_cerrado_por` FOREIGN KEY (`cerrado_por`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `classes`
+-- 3. Table `classes`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `classes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `docente_id` INT NOT NULL,
+  `ciclo_id` INT NULL,
   `asignatura` VARCHAR(150) NOT NULL,
   `modulo` VARCHAR(50) DEFAULT 'Módulo 1',
   `semestre` VARCHAR(50) DEFAULT 'Módulo 1-1',
@@ -116,11 +76,13 @@ CREATE TABLE IF NOT EXISTS `classes` (
   `asistencia` VARCHAR(20) DEFAULT '100%',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_classes_docente` (`docente_id`),
-  CONSTRAINT `fk_classes_docente` FOREIGN KEY (`docente_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+  INDEX `idx_classes_ciclo` (`ciclo_id`),
+  CONSTRAINT `fk_classes_docente` FOREIGN KEY (`docente_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_classes_ciclo` FOREIGN KEY (`ciclo_id`) REFERENCES `ciclos`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `clase_estudiantes` (Relación muchos-a-muchos classes ↔ users)
+-- 4. Table `clase_estudiantes` (Relación muchos-a-muchos classes ↔ users)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `clase_estudiantes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -133,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `clase_estudiantes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `attendance` (Registro de asistencia por clase, alumno y fecha)
+-- 5. Table `attendance` (Registro de asistencia por clase, alumno y fecha)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `attendance` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -150,7 +112,7 @@ CREATE TABLE IF NOT EXISTS `attendance` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Table `grades` (Calificaciones Rubato: Corte 1 y Corte 2 al 50%)
+-- 6. Table `grades` (Calificaciones Rubato: Corte 1 y Corte 2 al 50%)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `grades` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -168,29 +130,34 @@ CREATE TABLE IF NOT EXISTS `grades` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------
--- Seed Data
+-- 7. Datos Semilla Indispensables
 -- -----------------------------------------------------
 
 -- Datos Semilla para Usuarios
 -- Nota: La contraseña para todos es 'Rubato.2026*'
--- Bcrypt Hash y AES-256 Encrypted
-INSERT INTO `users` (`id`, `nombre`, `apellido`, `email`, `username`, `role`, `especialidad`, `password_hash`, `password_encrypted`) VALUES
-(1, 'Admin', 'Rubato', 'admin@rubato.org', 'admin.rubato01', 'ADMIN', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
-(2, 'SuperAdmin', 'Sistema', 'superadmin@rubato.org', 'superadmin.sistema01', 'ADMIN', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
-(3, 'Carlos', 'Silva', 'carlos.silva@rubato.org', 'carlos.silva01', 'DOCENTE', 'Piano y Dirección de Orquesta', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
-(4, 'María', 'Fernández', 'maria.fernandez@rubato.org', 'maria.fernandez01', 'DOCENTE', 'Teoría Musical y Solfeo', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
-(5, 'Ana María', 'Gómez', 'ana.gomez@rubato.org', 'ana.gomez01', 'ESTUDIANTE', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2'),
-(6, 'Luis', 'Pérez', 'luis.perez@rubato.org', 'luis.perez01', 'ESTUDIANTE', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', 'e45c86ac088742c022e930d26b6114c2')
+-- Bcrypt Hash y AES-256 Encrypted (Formato iv:ciphertext)
+INSERT INTO `users` (`id`, `nombre`, `apellido`, `email`, `username`, `role`, `phone`, `especialidad`, `password_hash`, `password_encrypted`) VALUES
+(1, 'Admin', 'Rubato', 'admin@rubato.org', 'admin.rubato01', 'ADMIN', '3001234567', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27'),
+(2, 'SuperAdmin', 'Sistema', 'superadmin@rubato.org', 'superadmin.sistema01', 'ADMIN', '3001234568', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27'),
+(3, 'Carlos', 'Silva', 'carlos.silva@rubato.org', 'carlos.silva01', 'DOCENTE', '3001234569', 'Piano y Dirección de Orquesta', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27'),
+(4, 'María', 'Fernández', 'maria.fernandez@rubato.org', 'maria.fernandez01', 'DOCENTE', '3001234570', 'Teoría Musical y Solfeo', '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27'),
+(5, 'Ana María', 'Gómez', 'ana.gomez@rubato.org', 'ana.gomez01', 'ESTUDIANTE', '3001234571', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27'),
+(6, 'Luis', 'Pérez', 'luis.perez@rubato.org', 'luis.perez01', 'ESTUDIANTE', '3001234572', NULL, '$2a$10$rMTViB5aFPvqITr.pz0UMuil4gv4L.ekhSW5E69R6OuU7z3/goUDu', '5817c1bf0f195dcfd2fbe3c16acb8791:9b08f4c28fcdbe794fb21edb01cfbf27')
 ON DUPLICATE KEY UPDATE `username`=`username`;
 
--- Datos Semilla para Clases
-INSERT INTO `classes` (`id`, `docente_id`, `asignatura`, `profesor_nombre`, `profesor_titulo`, `dia_semana`, `horario`, `hora_inicio`, `hora_fin`, `aula`, `nota`, `asistencia`) VALUES
-(101, 3, 'Piano Complementario I', 'Maestro Carlos Silva', 'profesor', 'Lunes', 'Lunes y Miércoles 10:00 - 11:30 AM', '10:00:00', '11:30:00', 'Sala 4', '4.8', '95%'),
-(102, 4, 'Teoría y Solfeo Avanzado', 'Dra. María Fernández', 'profesora', 'Martes', 'Martes y Jueves 02:00 - 04:00 PM', '14:00:00', '16:00:00', 'Auditorio Principal', '4.5', '90%'),
-(103, 3, 'Ensayo de Orquesta Filarmónica', 'Maestro Carlos Silva', 'director', 'Viernes', 'Viernes 03:00 - 06:00 PM', '15:00:00', '18:00:00', 'Teatro Rubato', '5.0', '100%')
+-- Datos Semilla para Ciclos Académicos
+INSERT INTO `ciclos` (`id`, `nombre`, `semestre`, `anio`, `fecha_inicio`, `fecha_fin`, `estado`) VALUES
+(1, 'Semestre 1 - 2026', '1', 2026, '2026-01-15', '2026-06-30', 'ABIERTO')
+ON DUPLICATE KEY UPDATE `nombre`=`nombre`;
+
+-- Datos Semilla para Clases (Asociadas al Ciclo 1)
+INSERT INTO `classes` (`id`, `docente_id`, `ciclo_id`, `asignatura`, `profesor_nombre`, `profesor_titulo`, `dia_semana`, `horario`, `hora_inicio`, `hora_fin`, `aula`, `nota`, `asistencia`) VALUES
+(101, 3, 1, 'Piano Complementario I', 'Maestro Carlos Silva', 'profesor', 'Lunes', 'Lunes 10:00 AM - 11:30 AM', '10:00:00', '11:30:00', 'Sala 4', '4.8', '95%'),
+(102, 4, 1, 'Teoría y Solfeo Avanzado', 'Dra. María Fernández', 'profesora', 'Martes', 'Martes 02:00 PM - 04:00 PM', '14:00:00', '16:00:00', 'Auditorio Principal', '4.5', '90%'),
+(103, 3, 1, 'Ensayo de Orquesta Filarmónica', 'Maestro Carlos Silva', 'director', 'Viernes', 'Viernes 03:00 PM - 06:00 PM', '15:00:00', '18:00:00', 'Teatro Rubato', '5.0', '100%')
 ON DUPLICATE KEY UPDATE `asignatura`=`asignatura`;
 
--- Datos Semilla para clase_estudiantes (estudiantes id 5 y 6 inscritos en las clases 101-103)
+-- Datos Semilla para clase_estudiantes (Estudiantes 5 y 6 inscritos en clases)
 INSERT IGNORE INTO `clase_estudiantes` (`clase_id`, `estudiante_id`) VALUES
 (101, 5),
 (101, 6),

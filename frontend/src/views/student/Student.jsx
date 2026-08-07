@@ -19,7 +19,12 @@ const mapDbClass = (c) => ({
   startTime: c.hora_inicio ? c.hora_inicio.substring(0, 5) : '08:00',
   endTime: c.hora_fin ? c.hora_fin.substring(0, 5) : '10:00',
   teacherName: c.profesor_nombre,
-  profesor: c.profesor_nombre
+  profesor: c.profesor_nombre,
+  cicloId: c.ciclo_id,
+  ciclo_id: c.ciclo_id,
+  cicloNombre: c.ciclo_nombre,
+  cicloEstado: c.ciclo_estado,
+  cicloAbierto: c.ciclo_abierto !== undefined && c.ciclo_abierto !== null ? Boolean(c.ciclo_abierto) : true
 });
 
 const teacherOf = (cls) => cls.teacherName || cls.profesor || cls.profesora || cls.director || 'Por asignar';
@@ -29,19 +34,35 @@ export default function Student() {
   const { addToast } = useToast();
 
   const [classes, setClasses] = useState([]);
+  const [cycles, setCycles] = useState([]);
+  const [selectedCycleId, setSelectedCycleId] = useState('');
   const [classesLoading, setClassesLoading] = useState(true);
 
   const userName = ((user?.nombre || '') + ' ' + (user?.apellido || '')).trim();
-  const myClasses = classes;
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const res = await fetch('/api/classes', { credentials: 'include' });
-        if (!res.ok) throw new Error('Error al cargar clases');
-        const data = await res.json();
-        if (active) setClasses((data.classes || []).map(mapDbClass));
+        const [classRes, cycleRes] = await Promise.all([
+          fetch('/api/classes', { credentials: 'include' }),
+          fetch('/api/cycles', { credentials: 'include' }).catch(() => null)
+        ]);
+        if (!classRes.ok) throw new Error('Error al cargar clases');
+        const classData = await classRes.json();
+        const cycleData = cycleRes && cycleRes.ok ? await cycleRes.json() : { cycles: [] };
+
+        if (active) {
+          const mappedClasses = (classData.classes || []).map(mapDbClass);
+          setClasses(mappedClasses);
+          const fetchedCycles = cycleData.cycles || [];
+          setCycles(fetchedCycles);
+
+          if (fetchedCycles.length > 0) {
+            const activeCycle = fetchedCycles.find(c => c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false));
+            setSelectedCycleId(activeCycle ? activeCycle.id : fetchedCycles[0].id);
+          }
+        }
       } catch (err) {
         if (active) addToast(err.message, 'error');
       } finally {
@@ -50,6 +71,11 @@ export default function Student() {
     })();
     return () => { active = false; };
   }, []);
+
+  const myClasses = useMemo(() => {
+    if (!selectedCycleId || selectedCycleId === 'ALL') return classes;
+    return classes.filter(c => Number(c.cicloId) === Number(selectedCycleId) || Number(c.ciclo_id) === Number(selectedCycleId));
+  }, [classes, selectedCycleId]);
 
   const [subjectsData, setSubjectsData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -149,9 +175,21 @@ export default function Student() {
                 </p>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full bg-purple-100 text-[#6b0060] font-semibold text-xs border border-purple-200">
-              Semestre Activo 2026-I
-            </span>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Ciclo:</label>
+              <select
+                value={selectedCycleId}
+                onChange={(e) => setSelectedCycleId(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-purple-50 text-[#6b0060] font-bold text-xs border border-purple-200 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">Todos los ciclos</option>
+                {cycles.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre} ({c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false) ? 'Abierto' : 'Cerrado'})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Tarjetas de Indicadores Académicos */}

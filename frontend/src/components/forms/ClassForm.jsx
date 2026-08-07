@@ -27,8 +27,8 @@ export const formatTime12h = (timeStr) => {
 
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export default function ClassForm({ initialData, onSubmit, onCancel }) {
-  const { students, teachers } = useDataManager();
+export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateToCycles }) {
+  const { students, teachers, cycles } = useDataManager();
   const { addToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -36,6 +36,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
     semester: '',
     subject: '',
     teacherId: '',
+    cicloId: '',
     selectedStudentIds: [],
     day: 'Lunes',
     startTime: '08:00',
@@ -44,6 +45,9 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    const openCycle = (cycles || []).find(c => c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false));
+    const defaultCiclo = openCycle ? openCycle.id : (cycles[0] ? cycles[0].id : '');
+
     if (initialData) {
       const teacher = teachers.find(t =>
         t.id === initialData.docente_id ||
@@ -68,15 +72,55 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
         semester: initialData.semester || '',
         subject: initialData.subject || initialData.asignatura || '',
         teacherId: teacher ? teacher.id : (initialData.docente_id || ''),
+        cicloId: initialData.ciclo_id || initialData.cicloId || defaultCiclo,
         selectedStudentIds: initialStudentIds,
         day: initialData.day || 'Lunes',
         startTime: initialData.startTime || '08:00',
         endTime: initialData.endTime || '10:00',
       });
     } else {
-      setFormData({ module: '', semester: '', subject: '', teacherId: '', selectedStudentIds: [], day: 'Lunes', startTime: '08:00', endTime: '10:00' });
+      setFormData({
+        module: '',
+        semester: '',
+        subject: '',
+        teacherId: '',
+        cicloId: defaultCiclo,
+        selectedStudentIds: [],
+        day: 'Lunes',
+        startTime: '08:00',
+        endTime: '10:00'
+      });
     }
-  }, [initialData, students, teachers]);
+  }, [initialData, students, teachers, cycles]);
+
+  const availableCycles = (cycles || []).filter(c => {
+    if (initialData && (Number(c.id) === Number(initialData.ciclo_id) || Number(c.id) === Number(initialData.cicloId))) return true;
+    return c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false);
+  });
+
+  if (availableCycles.length === 0) {
+    return (
+      <div className="p-6 text-center bg-purple-50/80 border border-purple-200 rounded-2xl space-y-3 font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-[#6b0060] mx-auto">
+          <Layers className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-slate-800">Primero debes crear un ciclo académico</h3>
+        <p className="text-xs text-slate-600 max-w-sm mx-auto font-medium leading-relaxed">
+          Para programar o guardar clases en la plataforma, debe existir al menos un ciclo académico en estado abierto.
+        </p>
+        {onNavigateToCycles && (
+          <button
+            type="button"
+            onClick={onNavigateToCycles}
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-[#6b0060] hover:bg-[#52004a] rounded-xl shadow-sm transition-colors cursor-pointer"
+          >
+            <Layers className="w-4 h-4" />
+            <span>Crear Ciclo Académico</span>
+          </button>
+        )}
+      </div>
+    );
+  }
 
   const handleModuleChange = (e) => {
     const selectedMod = e.target.value;
@@ -119,6 +163,9 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
     if (!formData.teacherId) {
       newErrors.teacherId = 'Debe asignar un docente a la clase';
     }
+    if (!formData.cicloId) {
+      newErrors.cicloId = 'Debe seleccionar un ciclo académico';
+    }
     if (formData.selectedStudentIds.length === 0) {
       newErrors.selectedStudentIds = 'Debe seleccionar al menos un estudiante para inscribir';
     }
@@ -157,6 +204,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
 
       const classPayload = {
         ...formData,
+        ciclo_id: Number(formData.cicloId) || formData.cicloId,
         startTimeFormatted: formattedStart,
         endTimeFormatted: formattedEnd,
         teacherName: assignedTeacher ? getFullName(assignedTeacher) : 'Docente Asignado',
@@ -168,11 +216,13 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
 
       onSubmit(classPayload);
       if (!initialData) {
+        const openCycle = (cycles || []).find(c => c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false));
         setFormData({
           module: '',
           semester: '',
           subject: '',
           teacherId: '',
+          cicloId: openCycle ? openCycle.id : (cycles[0] ? cycles[0].id : ''),
           selectedStudentIds: [],
           day: 'Lunes',
           startTime: '08:00',
@@ -198,8 +248,27 @@ export default function ClassForm({ initialData, onSubmit, onCancel }) {
     ? students.filter(s => (s.module || 'Módulo 1') === formData.module || formData.selectedStudentIds.includes(s.id))
     : students;
 
+
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+      <FormField
+        label="Ciclo Académico"
+        name="cicloId"
+        type="select"
+        value={formData.cicloId}
+        onChange={handleChange}
+        icon={Layers}
+        error={errors.cicloId}
+        options={[
+          { value: '', label: 'Seleccionar Ciclo Académico...', disabled: true },
+          ...availableCycles.map((c) => ({
+            value: c.id,
+            label: `${c.nombre || `Semestre ${c.semestre || '1'} - ${c.anio || ''}`} (hasta ${c.fecha_fin ? String(c.fecha_fin).substring(0, 10) : '—'})`
+          }))
+        ]}
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Módulo del Pénsum"

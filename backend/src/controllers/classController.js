@@ -3,7 +3,8 @@ const classService = require('../services/classService');
 
 async function getClasses(req, res) {
   try {
-    const classes = await classService.getAllClasses(req.user);
+    const activeOnly = req.query.activeOnly === 'true';
+    const classes = await classService.getAllClasses(req.user, { activeOnly });
     return res.json({
       role: req.user.role,
       usuario: req.user.nombre,

@@ -11,6 +11,19 @@ async function verifyDocenteOwnsClass(classId, userId) {
   return rows.length > 0;
 }
 
+async function verifyCicloAbierto(classId) {
+  if (!classId) return false;
+  const [rows] = await pool.query(
+    `SELECT (ci.estado = 'ABIERTO' AND ci.fecha_fin >= CURDATE()) AS is_open
+     FROM classes c
+     JOIN ciclos ci ON ci.id = c.ciclo_id
+     WHERE c.id = ? LIMIT 1`,
+    [classId]
+  );
+  if (!rows[0]) return false;
+  return Boolean(rows[0].is_open);
+}
+
 async function getAttendance(req, res) {
   try {
     const estudianteId = req.user.role === 'ESTUDIANTE' ? req.user.id : (req.query.estudianteId || undefined);
@@ -34,6 +47,10 @@ async function saveAttendance(req, res) {
       const owns = await verifyDocenteOwnsClass(classId, req.user.id);
       if (!owns) {
         return res.status(403).json({ error: 'No tienes permiso para modificar la asistencia de esta clase.' });
+      }
+      const isOpen = await verifyCicloAbierto(classId);
+      if (!isOpen) {
+        return res.status(403).json({ error: 'El ciclo académico de esta clase está cerrado.' });
       }
     }
     const result = await academicService.saveAttendance(req.body);
@@ -67,6 +84,10 @@ async function saveGrades(req, res) {
       const owns = await verifyDocenteOwnsClass(classId, req.user.id);
       if (!owns) {
         return res.status(403).json({ error: 'No tienes permiso para modificar las notas de esta clase.' });
+      }
+      const isOpen = await verifyCicloAbierto(classId);
+      if (!isOpen) {
+        return res.status(403).json({ error: 'El ciclo académico de esta clase está cerrado.' });
       }
     }
     const result = await academicService.saveGrades(req.body);
