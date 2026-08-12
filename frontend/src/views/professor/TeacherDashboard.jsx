@@ -57,16 +57,21 @@ export default function TeacherDashboard() {
   const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
-      <Header />
+    <div className="min-h-screen flex flex-col font-sans relative">
+      {/* Background image & overlay */}
+      <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-[url('/backgrounds/dashboard-bg.png')]" />
+      <div className="fixed inset-0 z-0 bg-slate-50/80 backdrop-blur-[1px] pointer-events-none" />
 
-      <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Header />
+
+        <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           
           {/* Encabezado con Simulación de Sesión de Docente */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+              <h1 className="text-3xl font-bold text-slate-800 font-serif">
                 Panel del Docente
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
@@ -123,7 +128,7 @@ export default function TeacherDashboard() {
           {/* Grid de Formulario y Horarios */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'create' ? 'Crear Nueva Clase' : 'Resumen por Día'}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
@@ -160,7 +165,7 @@ export default function TeacherDashboard() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'create' ? 'Clases Programadas' : 'Detalle del Horario'}
               </h2>
               <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
@@ -192,7 +197,7 @@ export default function TeacherDashboard() {
 
           {/* Directorio de Estudiantes Inscritos */}
           <div className="mt-8 bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+            <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
               Directorio de Estudiantes Registrados
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -224,6 +229,7 @@ export default function TeacherDashboard() {
       />
 
       <Footer />
+      </div>
     </div>
   );
 }

@@ -35,20 +35,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Fondos decorativos sutiles */}
-      <div className="absolute inset-0 flex z-0 opacity-40 pointer-events-none">
-        <div className="w-1/2 bg-[repeating-linear-gradient(45deg,#e2e8f0,#e2e8f0_10px,#cbd5e1_10px,#cbd5e1_20px)] opacity-20"></div>
-        <div className="w-1/2 bg-[repeating-linear-gradient(-45deg,#e2e8f0,#e2e8f0_10px,#cbd5e1_10px,#cbd5e1_20px)] opacity-20"></div>
-      </div>
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 relative overflow-hidden font-sans">
+      {/* Background images: vbg-login.jpeg on mobile, hbg-login.jpeg on desktop */}
+      <div className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat bg-[url('/backgrounds/vbg_login.png')] sm:bg-[url('/backgrounds/hbg_login.png')]" />
+      
+      {/* Glassmorphic overlay to ensure text readability */}
+      <div className="absolute inset-0 z-0" />
+
 
       {/* Encabezado */}
       <header className="relative z-10 text-center pt-10 pb-4">
-        <h1 className="text-4xl sm:text-5xl text-[#6b0060] mb-1 font-['Playfair_Display',serif] font-black tracking-wide">
-          FUNDACIÓN RUBATO
+        <h1 className="uppercase text-4xl sm:text-5xl text-[#6b0060] mb-1 font-serif font-black tracking-wide">
+          conservatorio rubato
         </h1>
-        <p className="text-slate-600 text-base font-medium">
-          Portal académico y musical
+        <p className="text-slate-100 text-base font-medium font-sans">
+          Portal Académico
         </p>
       </header>
 
@@ -56,17 +57,17 @@ export default function Login() {
         <div className="w-full max-w-md">
 
           {/* Tarjeta de Login */}
-          <div className="rounded-2xl p-8 bg-white border border-slate-200 shadow-md">
+          <div className="rounded-2xl p-8 bg-white/40 backdrop-blur-md border border-slate-200 shadow-md">
 
             {/* Logo de la Fundación con Fallback */}
             <div className="text-center mb-6">
               {!imgError ? (
-                <div className="flex items-center justify-center mx-auto mb-2 min-h-[90px]">
+                <div className="flex items-center justify-center mx-auto mb-2 min-h-22.5">
                   <img
-                    src="/images/logo-Rubato.png"
+                    src="/images/rubato-logo.png"
                     alt="Logo Fundación Rubato"
                     onError={() => setImgError(true)}
-                    className="max-h-24 w-auto object-contain transition-transform hover:scale-105"
+                    className="max-h-36 w-auto object-contain transition-transform hover:scale-105"
                   />
                 </div>
               ) : (
@@ -77,11 +78,11 @@ export default function Login() {
             </div>
 
             {/* Títulos */}
-            <h2 className="text-2xl font-bold text-slate-800 text-center mb-1 font-['Playfair_Display',serif]">
+            <h2 className="text-2xl font-bold text-slate-800 text-center mb-1 font-serif">
               Iniciar sesión
             </h2>
-            <p className="text-sm text-slate-500 text-center mb-6">
-              Acceder con tu cuenta institucional
+            <p className="text-sm text-slate-900 font-medium text-center mb-6">
+              Accede con tus credenciales
             </p>
 
             {errorMessage && (
@@ -100,6 +101,8 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 icon={User}
                 placeholder="Usuario o correo"
+                className="bg-white/30 backdrop-blur-sm border-slate-300 focus:bg-white/60 placeholder:text-slate-600"
+                iconColor="text-slate-900"
               />
 
               <FormField
@@ -109,12 +112,14 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 icon={Lock}
                 placeholder="Contraseña"
+                className="bg-white/30 backdrop-blur-sm border-slate-300 focus:bg-white/60 placeholder:text-slate-600"
+                iconColor="text-slate-900"
               />
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 bg-[#6b0060] transition-colors duration-200 hover:bg-[#52004a] shadow-sm"
+                className="w-full py-3 px-4 text-white font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 bg-[#6b0060]/70 transition-colors duration-200 hover:bg-[#52004a] shadow-sm"
               >
                 <span>{submitting ? 'Verificando...' : 'Ingresar al portal'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -123,8 +128,8 @@ export default function Login() {
 
           </div>
 
-          <p className="text-center text-xs text-slate-400 mt-4">
-            Gestor Académico y Musical - Fundación Rubato 🎵
+          <p className="text-center text-xs text-slate-100 font-medium mt-4">
+            Gestor Académico
           </p>
         </div>
       </main>

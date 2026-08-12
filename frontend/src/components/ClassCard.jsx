@@ -12,7 +12,7 @@ export default function ClassCard({ classData, onDelete }) {
     <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-base font-bold text-slate-800 font-['Playfair_Display',serif]">{classData.subject}</h3>
+          <h3 className="text-base font-bold text-slate-800 font-serif">{classData.subject}</h3>
           <span className="text-xs text-[#6b0060] bg-purple-100 px-2.5 py-0.5 rounded-full font-semibold">
             {classData.day}
           </span>

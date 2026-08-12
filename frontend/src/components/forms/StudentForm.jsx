@@ -109,7 +109,7 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+    <form onSubmit={handleSubmit} className="space-y-4 font-sans">
       {/* Nombre Completo */}
       <FormField
         label="Nombre Completo"

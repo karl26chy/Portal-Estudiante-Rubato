@@ -187,7 +187,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Header />
 
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
           {/* Encabezado del Módulo */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+              <h1 className="text-3xl font-bold text-slate-800 font-serif">
                 Panel de Administración
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
             
             {/* Columna Izquierda: Formulario en Tarjeta */}
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'students' && (editingItem ? 'Editar Estudiante' : 'Registrar Estudiante')}
                 {activeTab === 'teachers' && (editingItem ? 'Editar Docente' : 'Registrar Docente')}
                 {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (SuperAdmin)')}
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
 
             {/* Columna Derecha: Vista / Directorio */}
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'students' && 'Directorio de Estudiantes'}
                 {activeTab === 'teachers' && 'Directorio de Docentes'}
                 {activeTab === 'admins' && 'Administradores Registrados (SuperAdmin)'}
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif]">
+                  <h3 className="font-bold text-slate-800 text-lg font-serif">
                     {generatedCredentialsModal.title || 'Credenciales Generadas'}
                   </h3>
                   <p className="text-xs text-slate-500">

@@ -10,6 +10,11 @@
   }
 }
 
+@theme {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
 @layer components {
   /* Panel con efecto vidrio esmerilado (fondos oscuros) */
   .glass-panel {
