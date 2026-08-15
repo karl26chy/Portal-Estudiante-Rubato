@@ -8,6 +8,7 @@ import TeacherForm from '../../components/forms/TeacherForm';
 import AdminForm from '../../components/forms/AdminForm';
 import ClassForm, { formatTime12h } from '../../components/forms/ClassForm';
 import CycleForm from '../../components/forms/CycleForm';
+import FormField from '../../components/forms/FormField';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import UserCard from '../../components/UserCard';
 import { useDataManager } from '../../context/DataManagerContext';
@@ -391,7 +392,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Header />
 
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
@@ -399,7 +400,7 @@ export default function AdminDashboard() {
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+              <h1 className="text-3xl font-bold text-slate-800 font-serif">
                 Panel de Administración
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
@@ -466,7 +467,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'students' && (editingItem ? 'Editar Estudiante' : 'Registrar Estudiante')}
                 {activeTab === 'teachers' && (editingItem ? 'Editar Docente' : 'Registrar Docente')}
                 {activeTab === 'admins' && (editingItem ? 'Editar Administrador' : 'Registrar Administrador (SuperAdmin)')}
@@ -514,7 +515,7 @@ export default function AdminDashboard() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
                 {activeTab === 'students' && 'Directorio de Estudiantes'}
                 {activeTab === 'teachers' && 'Directorio de Docentes'}
                 {activeTab === 'admins' && 'Administradores Registrados (SuperAdmin)'}
@@ -590,22 +591,22 @@ export default function AdminDashboard() {
               {activeTab === 'classes' && (
                 <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
                   {classes.length > 0 && cycles.length > 0 && (
-                    <div className="mb-4">
-                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Filtrar por ciclo
-                      </label>
-                      <select
+                    <div className="mb-6 max-w-xs">
+                      <FormField
+                        label="Filtrar por ciclo"
+                        name="classFilterCycle"
+                        type="select"
                         value={classFilterCycle}
                         onChange={(e) => setClassFilterCycle(e.target.value)}
-                        className="w-full max-w-xs px-3.5 py-2 rounded-xl bg-white text-slate-700 font-medium text-sm border border-slate-300 focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 cursor-pointer"
-                      >
-                        <option value="">Todos los ciclos</option>
-                        {cycles.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.nombre} ({c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false) ? 'ABIERTO' : 'CERRADO'})
-                          </option>
-                        ))}
-                      </select>
+                        icon={Layers}
+                        options={[
+                          { value: '', label: 'Todos los ciclos' },
+                          ...cycles.map((c) => ({
+                            value: String(c.id),
+                            label: `${c.nombre} (${(c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false)) ? 'ABIERTO' : 'CERRADO'})`
+                          }))
+                        ]}
+                      />
                     </div>
                   )}
                   {classes.length === 0 ? (
@@ -820,7 +821,7 @@ export default function AdminDashboard() {
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif] truncate">
+                  <h3 className="font-bold text-slate-800 text-lg font-serif truncate">
                     {generatedCredentialsModal.title || 'Credenciales Generadas'}
                   </h3>
                   <p className="text-xs text-slate-500 truncate">
@@ -898,7 +899,7 @@ export default function AdminDashboard() {
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-slate-800 text-lg font-['Playfair_Display',serif] truncate">
+                  <h3 className="font-bold text-slate-800 text-lg font-serif truncate">
                     Clases de {studentClassesModal.studentName}
                   </h3>
                   <p className="text-xs text-slate-500 truncate">

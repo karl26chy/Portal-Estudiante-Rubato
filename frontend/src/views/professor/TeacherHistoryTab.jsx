@@ -143,7 +143,7 @@ export default function TeacherHistoryTab() {
   }
 
   return (
-    <div className="space-y-6 font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="space-y-6 font-sans">
       {/* Banner de selección de Ciclo Cerrado */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -151,7 +151,7 @@ export default function TeacherHistoryTab() {
             <Lock className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+            <h2 className="text-xl font-bold text-slate-800 font-serif">
               Registros Históricos por Ciclo
             </h2>
             <p className="text-sm text-slate-500 font-medium">
@@ -192,7 +192,7 @@ export default function TeacherHistoryTab() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Listado de clases del ciclo cerrado seleccionado */}
           <div className="lg:col-span-1 space-y-4">
-            <h3 className="text-base font-bold text-slate-800 font-['Playfair_Display',serif]">
+            <h3 className="text-base font-bold text-slate-800 font-serif">
               Clases del Ciclo ({cycleClasses.length})
             </h3>
             <div className="bg-white rounded-2xl shadow-sm p-4 border border-slate-200 space-y-2">
@@ -226,7 +226,7 @@ export default function TeacherHistoryTab() {
 
           {/* Detalle de consulta histórica de la clase */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-base font-bold text-slate-800 font-['Playfair_Display',serif]">
+            <h3 className="text-base font-bold text-slate-800 font-serif">
               Registro Histórico de Asistencia y Notas
             </h3>
             <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">

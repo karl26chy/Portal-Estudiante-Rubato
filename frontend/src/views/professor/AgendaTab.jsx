@@ -209,7 +209,7 @@ export default function AgendaTab() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+        <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
           Resumen por Día
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5">
@@ -240,7 +240,7 @@ export default function AgendaTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+          <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
             Detalle de Horario — {selectedDay}
           </h2>
           <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200 space-y-2.5">
@@ -281,7 +281,7 @@ export default function AgendaTab() {
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+          <h2 className="text-xl font-bold text-slate-800 mb-4 font-serif">
             Estudiantes Matriculados
           </h2>
           <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">

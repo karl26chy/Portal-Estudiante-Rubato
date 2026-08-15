@@ -15,15 +15,20 @@ export default function TeacherDashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
-      <Header />
+    <div className="min-h-screen flex flex-col font-sans relative">
+      {/* Background image & overlay */}
+      <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-[url('/backgrounds/dashboard-bg.png')]" />
+      <div className="fixed inset-0 z-0 bg-slate-50/80 backdrop-blur-[1px] pointer-events-none" />
 
-      <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Header />
+
+        <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+              <h1 className="text-3xl font-bold text-slate-800 font-serif">
                 Panel del Docente
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">
@@ -73,9 +78,10 @@ export default function TeacherDashboard() {
           )}
 
         </div>
-      </main>
+        </main>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }

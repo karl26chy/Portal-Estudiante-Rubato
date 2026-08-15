@@ -231,7 +231,7 @@ export default function StudentHistoryTab() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200 min-w-0">
-              <h3 className="text-lg font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 font-serif">
                 Historial de Asistencia
               </h3>
               {sortedAttendance.length === 0 ? (
@@ -258,7 +258,7 @@ export default function StudentHistoryTab() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-200 min-w-0">
-              <h3 className="text-lg font-bold text-slate-800 mb-4 font-['Playfair_Display',serif]">
+              <h3 className="text-lg font-bold text-slate-800 mb-4 font-serif">
                 Rendimiento por Cortes (Sistema Rubato)
               </h3>
               {chartData.length === 0 ? (

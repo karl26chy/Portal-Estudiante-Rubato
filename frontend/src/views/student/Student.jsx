@@ -154,10 +154,15 @@ export default function Student() {
   const notaFinal = grade ? calcNotaFinal(grade.corte1, grade.corte2) : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
-      <Header />
+    <div className="min-h-screen flex flex-col font-sans relative">
+      {/* Background image & overlay */}
+      <div className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-[url('/backgrounds/dashboard-bg.png')]" />
+      <div className="fixed inset-0 z-0 bg-slate-50/80 backdrop-blur-[1px] pointer-events-none" />
 
-      <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Header />
+
+        <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
 
           {/* Tarjeta de Bienvenida del Estudiante */}
@@ -167,7 +172,7 @@ export default function Student() {
                 <GraduationCap className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800 font-['Playfair_Display',serif]">
+                <h1 className="text-2xl font-bold text-slate-800 font-serif">
                   ¡Bienvenido(a), {userName || 'Estudiante Rubato'}!
                 </h1>
                 <p className="text-sm text-slate-500 font-medium">
@@ -228,7 +233,7 @@ export default function Student() {
           {/* Horario de Clases Inscritas */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-8">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 font-['Playfair_Display',serif]">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 font-serif">
                 <Calendar className="w-5 h-5 text-[#6b0060]" /> Horarios de Clases Programadas
               </h3>
             </div>
@@ -347,7 +352,7 @@ export default function Student() {
           {!loading && selectedClass && (
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                <h3 className="text-lg font-bold text-slate-800 font-['Playfair_Display',serif]">
+                <h3 className="text-lg font-bold text-slate-800 font-serif">
                   Detalle de {selectedClass.subject || selectedClass.asignatura}
                 </h3>
                 <span className="inline-block px-3 py-1 rounded-full bg-purple-100 text-[#6b0060] font-semibold text-xs border border-purple-200">
@@ -437,9 +442,10 @@ export default function Student() {
           )}
 
         </div>
-      </main>
+        </main>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }
