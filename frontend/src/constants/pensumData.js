@@ -11,7 +11,7 @@ export const INSTRUMENTOS_CATEGORIZADOS = [
   },
   {
     categoria: 'Vientos',
-    opciones: ['Flauta traversa', 'Clarinete', 'Trompeta', 'Trombón', 'Tuba', 'Saxofón']
+    opciones: ['Flauta traversa', 'Clarinete', 'Oboe', 'Trompeta', 'Trombón', 'Tuba', 'Saxofón']
   },
   {
     categoria: 'Otros',
@@ -52,9 +52,10 @@ export const ASIGNATURAS_POR_MODULO = {
   'Módulo 2': [
     'Armonía',
     'Composición',
-    'Ensambles Camerata Banda Girls Band',
+    'Música de Cámara',
     'Historia de la música',
-    'Instrumento principal y complementario',
+    'Instrumento principal',
+    'Instrumento complementario',
     'Solfeo',
     'Tecnología musical'
   ],
@@ -63,6 +64,8 @@ export const ASIGNATURAS_POR_MODULO = {
     'Dirección de orquesta',
     'Pedagogía',
     'Producción',
-    'Orquestación (clase para línea de dirección / composición)'
+    'Orquestación (clase para línea de dirección / composición)',
+    'Instrumento principal',
+    'Instrumento complementario'
   ]
 };

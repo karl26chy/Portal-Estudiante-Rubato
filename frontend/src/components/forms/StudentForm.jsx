@@ -24,6 +24,8 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     birthdate: '',
     age: '',
     instrument: '',
+    instrumento_principal: '',
+    instrumento_complementario: '',
     email: '',
     phone: '',
     module: '',
@@ -47,19 +49,33 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     if (initialData) {
       const { nombre, apellido } = parseNameFromLegacy(initialData);
       const computedAge = initialData.birthdate ? calculateAge(initialData.birthdate) : (initialData.age || '');
+      
+      // Parsear instrumento principal y complementario si está en formato concatenado "Principal / Complementario"
+      let principal = '';
+      let complementario = '';
+      if (initialData.instrument && initialData.instrument.includes(' (Principal) / ')) {
+        const parts = initialData.instrument.split(' (Principal) / ');
+        principal = parts[0] || '';
+        complementario = parts[1] ? parts[1].replace(' (Complementario)', '') : '';
+      } else {
+        principal = initialData.instrument || '';
+      }
+
       setFormData({
         nombre,
         apellido,
         birthdate: initialData.birthdate || '',
         age: computedAge,
         instrument: initialData.instrument || '',
+        instrumento_principal: principal,
+        instrumento_complementario: complementario,
         email: initialData.email || '',
         phone: initialData.phone || initialData.celular || '',
         module: initialData.module || '',
         semester: initialData.semester || '',
       });
     } else {
-      setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+      setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', instrumento_principal: '', instrumento_complementario: '', email: '', phone: '', module: '', semester: '' });
     }
   }, [initialData]);
 
@@ -101,9 +117,20 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
     } else if (formData.age < 3 || formData.age > 100) {
       newErrors.birthdate = 'La fecha ingresada no corresponde a una edad válida (3-100 años)';
     }
-    if (!formData.instrument.trim()) {
-      newErrors.instrument = 'El instrumento es obligatorio (seleccione de la lista)';
+
+    if (formData.module === 'Módulo 2' || formData.module === 'Módulo 3') {
+      if (!formData.instrumento_principal) {
+        newErrors.instrumento_principal = 'El instrumento principal es obligatorio';
+      }
+      if (!formData.instrumento_complementario) {
+        newErrors.instrumento_complementario = 'El instrumento complementario es obligatorio';
+      }
+    } else {
+      if (!formData.instrument.trim()) {
+        newErrors.instrument = 'El instrumento es obligatorio (seleccione de la lista)';
+      }
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email || !emailRegex.test(formData.email)) {
       newErrors.email = 'Ingrese un correo electrónico válido';
@@ -125,14 +152,20 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
+      let finalInstrument = formData.instrument;
+      if (formData.module === 'Módulo 2' || formData.module === 'Módulo 3') {
+        finalInstrument = `${formData.instrumento_principal} (Principal) / ${formData.instrumento_complementario} (Complementario)`;
+      }
+
       const studentPayload = {
         ...formData,
+        instrument: finalInstrument,
         age: Number(formData.age),
       };
 
       onSubmit(studentPayload);
       if (!initialData) {
-        setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', email: '', phone: '', module: '', semester: '' });
+        setFormData({ nombre: '', apellido: '', birthdate: '', age: '', instrument: '', instrumento_principal: '', instrumento_complementario: '', email: '', phone: '', module: '', semester: '' });
       }
     }
   };
@@ -189,23 +222,62 @@ export default function StudentForm({ initialData, onSubmit, onCancel }) {
         )}
       </FormField>
 
-      <FormField
-        label="Instrumento (Pénsum Oficial)"
-        name="instrument"
-        type="select"
-        value={formData.instrument}
-        onChange={handleChange}
-        icon={Music}
-        error={errors.instrument}
-        options={[
-          { value: '', label: 'Seleccionar instrumento del pénsum...', disabled: true },
-          ...INSTRUMENTOS_CATEGORIZADOS.map(cat => ({
-            isGroup: true,
-            label: cat.categoria,
-            options: cat.opciones.map(inst => ({ value: inst, label: inst }))
-          }))
-        ]}
-      />
+      {formData.module === 'Módulo 2' || formData.module === 'Módulo 3' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            label="Instrumento Principal"
+            name="instrumento_principal"
+            type="select"
+            value={formData.instrumento_principal}
+            onChange={handleChange}
+            icon={Music}
+            error={errors.instrumento_principal}
+            options={[
+              { value: '', label: 'Seleccionar instrumento principal...', disabled: true },
+              ...INSTRUMENTOS_CATEGORIZADOS.map(cat => ({
+                isGroup: true,
+                label: cat.categoria,
+                options: cat.opciones.map(inst => ({ value: inst, label: inst }))
+              }))
+            ]}
+          />
+          <FormField
+            label="Instrumento Complementario"
+            name="instrumento_complementario"
+            type="select"
+            value={formData.instrumento_complementario}
+            onChange={handleChange}
+            icon={Music}
+            error={errors.instrumento_complementario}
+            options={[
+              { value: '', label: 'Seleccionar instrumento complementario...', disabled: true },
+              ...INSTRUMENTOS_CATEGORIZADOS.map(cat => ({
+                isGroup: true,
+                label: cat.categoria,
+                options: cat.opciones.map(inst => ({ value: inst, label: inst }))
+              }))
+            ]}
+          />
+        </div>
+      ) : (
+        <FormField
+          label="Instrumento (Pénsum Oficial)"
+          name="instrument"
+          type="select"
+          value={formData.instrument}
+          onChange={handleChange}
+          icon={Music}
+          error={errors.instrument}
+          options={[
+            { value: '', label: 'Seleccionar instrumento del pénsum...', disabled: true },
+            ...INSTRUMENTOS_CATEGORIZADOS.map(cat => ({
+              isGroup: true,
+              label: cat.categoria,
+              options: cat.opciones.map(inst => ({ value: inst, label: inst }))
+            }))
+          ]}
+        />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField

@@ -244,6 +244,13 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
 
   const availableSemesters = formData.module ? (SEMESTRES_POR_MODULO[formData.module] || []) : [];
   const availableSubjects = formData.module ? (ASIGNATURAS_POR_MODULO[formData.module] || []) : [];
+  
+  // Agregar la asignatura guardada de manera dinámica si no está en el listado oficial (soporte histórico)
+  const selectSubjects = [...availableSubjects];
+  if (formData.subject && !selectSubjects.includes(formData.subject)) {
+    selectSubjects.push(formData.subject);
+  }
+
   const filteredStudents = formData.module
     ? students.filter(s => (s.module || 'Módulo 1') === formData.module || formData.selectedStudentIds.includes(s.id))
     : students;
@@ -308,7 +315,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
         error={errors.subject}
         options={[
           { value: '', label: formData.module ? 'Seleccionar Asignatura...' : 'Seleccione un módulo primero', disabled: true },
-          ...availableSubjects.map(sub => ({ value: sub, label: sub }))
+          ...selectSubjects.map(sub => ({ value: sub, label: sub }))
         ]}
       />
 

@@ -1,18 +1,22 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+const sslConfig = process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true'
+  ? { rejectUnauthorized: false }
+  : false;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: sslConfig
 });
 
 async function testConnection() {
   try {
     const client = await pool.connect();
-    console.log('\u2705 Conexión exitosa a PostgreSQL (Supabase)');
+    console.log('✅ Conexión exitosa a PostgreSQL');
     client.release();
   } catch (error) {
-    console.error('\u274C Error de conexión a PostgreSQL:', error.message);
+    console.error('❌ Error de conexión a PostgreSQL:', error.message);
   }
 }
 
