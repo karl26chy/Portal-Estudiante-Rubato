@@ -48,9 +48,7 @@ export default function Login() {
         <h1 className="uppercase text-4xl sm:text-5xl text-[#6b0060] mb-1 font-serif font-black tracking-wide">
           conservatorio rubato
         </h1>
-        <p className="text-slate-100 text-base font-medium font-sans">
-          Portal Académico
-        </p>
+        
       </header>
 
       <main className="relative z-10 flex-1 flex flex-col justify-center items-center px-4 py-6">
@@ -67,7 +65,7 @@ export default function Login() {
                     src="/images/rubato-logo.png"
                     alt="Logo Fundación Rubato"
                     onError={() => setImgError(true)}
-                    className="max-h-36 w-auto object-contain transition-transform hover:scale-105"
+                    className="max-h-36 w-auto object-contain"
                   />
                 </div>
               ) : (
@@ -100,7 +98,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 icon={User}
-                placeholder="Usuario o correo"
+                placeholder="Usuario"
                 className="bg-white/30 backdrop-blur-sm border-slate-300 focus:bg-white/60 placeholder:text-slate-600"
                 iconColor="text-slate-900"
               />
@@ -128,9 +126,9 @@ export default function Login() {
 
           </div>
 
-          <p className="text-center text-xs text-slate-100 font-medium mt-4">
-            Gestor Académico
-          </p>
+          <p className="text-slate-100 text-base font-medium font-sans text-center">
+          Portal Académico
+        </p>
         </div>
       </main>
 
