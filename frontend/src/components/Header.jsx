@@ -51,12 +51,12 @@ export default function Header() {
         {/* Marca / Logo */}
         <Link to={user ? `/${user.role}` : '/login'} className="flex items-center gap-3 group">
           <img 
-            src="/images/logo-Rubato.png" 
+            src="/images/rubato-logo.png" 
             alt="Logo Fundación Rubato" 
             className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" 
           />
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-slate-800 font-['Playfair_Display',serif] tracking-tight leading-none">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800 font-serif tracking-tight leading-none">
               FUNDACIÓN RUBATO
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">Portal académico y musical</p>
@@ -80,10 +80,10 @@ export default function Header() {
               
               {/* Tarjeta flotante con usuario/admin activo */}
               <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-right">
-                <p className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[160px]">
+                <p className="text-xs font-bold text-slate-800 leading-tight truncate max-w-40">
                   {activeUser.nombre || activeUser.name}
                 </p>
-                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[160px]">
+                <p className="text-[10px] text-slate-500 font-medium truncate max-w-40">
                   {activeUser.usuario || activeUser.email}
                 </p>
               </div>

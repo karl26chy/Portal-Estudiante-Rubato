@@ -258,7 +258,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
+    <form onSubmit={handleSubmit} className="space-y-4 font-sans">
       <FormField
         label="Ciclo Académico"
         name="cicloId"
