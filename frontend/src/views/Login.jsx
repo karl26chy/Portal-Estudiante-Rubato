@@ -17,7 +17,7 @@ export default function Login() {
 
   const handleCustomLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       setErrorMessage('Ingresa tu usuario y contraseña.');
       return;
     }
@@ -25,7 +25,7 @@ export default function Login() {
     try {
       setSubmitting(true);
       setErrorMessage('');
-      const loggedUser = await login(email, password);
+      const loggedUser = await login(email.trim(), password.trim());
       navigate(`/${loggedUser.role}`);
     } catch (err) {
       setErrorMessage(err.message || 'Credenciales no válidas.');
