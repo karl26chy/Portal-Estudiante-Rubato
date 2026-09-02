@@ -29,6 +29,7 @@ export default function AdminDashboard() {
 
   const [visiblePasswords, setVisiblePasswords] = useState({});
   const [classFilterCycle, setClassFilterCycle] = useState('');
+  const [classFilterTeacher, setClassFilterTeacher] = useState('');
 
   const togglePasswordVisibility = (id) => {
     setVisiblePasswords(prev => ({
@@ -589,23 +590,42 @@ export default function AdminDashboard() {
 
               {activeTab === 'classes' && (
                 <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-slate-200">
-                  {classes.length > 0 && cycles.length > 0 && (
-                    <div className="mb-4">
-                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Filtrar por ciclo
-                      </label>
-                      <select
-                        value={classFilterCycle}
-                        onChange={(e) => setClassFilterCycle(e.target.value)}
-                        className="w-full max-w-xs px-3.5 py-2 rounded-xl bg-white text-slate-700 font-medium text-sm border border-slate-300 focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 cursor-pointer"
-                      >
-                        <option value="">Todos los ciclos</option>
-                        {cycles.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.nombre} ({c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false) ? 'ABIERTO' : 'CERRADO'})
-                          </option>
-                        ))}
-                      </select>
+                  {classes.length > 0 && (cycles.length > 0 || teachers.length > 0) && (
+                    <div className="mb-4 flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1">
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                          Filtrar por ciclo
+                        </label>
+                        <select
+                          value={classFilterCycle}
+                          onChange={(e) => setClassFilterCycle(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl bg-white text-slate-700 font-medium text-sm border border-slate-300 focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 cursor-pointer"
+                        >
+                          <option value="">Todos los ciclos</option>
+                          {cycles.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre} ({c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false) ? 'ABIERTO' : 'CERRADO'})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                          Filtrar por docente
+                        </label>
+                        <select
+                          value={classFilterTeacher}
+                          onChange={(e) => setClassFilterTeacher(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl bg-white text-slate-700 font-medium text-sm border border-slate-300 focus:outline-none focus:border-[#6b0060] focus:ring-2 focus:ring-[#6b0060]/20 cursor-pointer"
+                        >
+                          <option value="">Todos los docentes</option>
+                          {teachers.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {getFullName(t)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   )}
                   {classes.length === 0 ? (
@@ -616,7 +636,11 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="space-y-4">
                       {classes
-                        .filter(cls => !classFilterCycle || Number(cls.ciclo_id) === Number(classFilterCycle) || Number(cls.cicloId) === Number(classFilterCycle))
+                        .filter(cls => {
+                          const matchCycle = !classFilterCycle || Number(cls.ciclo_id) === Number(classFilterCycle) || Number(cls.cicloId) === Number(classFilterCycle);
+                          const matchTeacher = !classFilterTeacher || Number(cls.docente_id) === Number(classFilterTeacher);
+                          return matchCycle && matchTeacher;
+                        })
                         .map((cls) => {
                         const isExpanded = expandedClassId === cls.id;
                         const enrolledStudents = (cls.studentNames || [])

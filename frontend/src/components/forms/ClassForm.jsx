@@ -43,6 +43,7 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
     endTime: '10:00',
   });
   const [errors, setErrors] = useState({});
+  const [studentModuleFilter, setStudentModuleFilter] = useState('Todos');
 
   useEffect(() => {
     const openCycle = (cycles || []).find(c => c.estado === 'ABIERTO' && (c.is_open || c.ciclo_abierto !== false));
@@ -129,10 +130,9 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
       module: selectedMod,
       semester: '',
       subject: '',
-      selectedStudentIds: [],
     }));
     if (errors.module) {
-      setErrors(prev => ({ ...prev, module: '', semester: '', subject: '', selectedStudentIds: '' }));
+      setErrors(prev => ({ ...prev, module: '', semester: '', subject: '' }));
     }
   };
 
@@ -251,9 +251,9 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
     selectSubjects.push(formData.subject);
   }
 
-  const filteredStudents = formData.module
-    ? students.filter(s => (s.module || 'Módulo 1') === formData.module || formData.selectedStudentIds.includes(s.id))
-    : students;
+  const filteredStudents = studentModuleFilter === 'Todos'
+    ? students
+    : students.filter(s => (s.module || 'Módulo 1') === studentModuleFilter);
 
 
 
@@ -338,27 +338,39 @@ export default function ClassForm({ initialData, onSubmit, onCancel, onNavigateT
 
       <div>
         <label className="block text-xs uppercase tracking-wider font-semibold text-slate-800 mb-1 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span>Estudiantes Inscritos</span>
-            {formData.module && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#6b0060] bg-purple-100 px-2 py-0.5 rounded-md normal-case">
-                <Filter className="w-3 h-3" /> Filtrado por {formData.module}
-              </span>
-            )}
-          </span>
+          <span>Estudiantes Inscritos</span>
           <span className="text-[#6b0060] font-bold text-xs">
             {formData.selectedStudentIds.length} seleccionado(s)
           </span>
         </label>
+
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 mr-1">
+            <Filter className="w-3 h-3" /> Filtrar:
+          </span>
+          {['Todos', ...MODULOS_OFI].map((mod) => {
+            const isActive = studentModuleFilter === mod;
+            return (
+              <button
+                key={mod}
+                type="button"
+                onClick={() => setStudentModuleFilter(mod)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-[#6b0060] text-white border-[#6b0060]'
+                    : 'bg-white text-slate-600 border-slate-300 hover:border-[#6b0060] hover:text-[#6b0060]'
+                }`}
+              >
+                {mod}
+              </button>
+            );
+          })}
+        </div>
         
         <div className="border border-slate-300 rounded-xl p-3 bg-slate-50 max-h-48 overflow-y-auto space-y-2">
-          {!formData.module ? (
-            <p className="text-xs text-slate-500 italic py-2 text-center">
-              Seleccione un módulo primero para filtrar automáticamente los estudiantes correspondientes.
-            </p>
-          ) : filteredStudents.length === 0 ? (
+          {filteredStudents.length === 0 ? (
             <p className="text-xs text-rose-500 italic py-2 text-center">
-              No se encontraron estudiantes registrados en {formData.module}
+              No se encontraron estudiantes registrados en {studentModuleFilter}
             </p>
           ) : (
             filteredStudents.map((student) => {
